@@ -1,0 +1,7 @@
+python-simplejson
+gustos2.2-common (= VERSION)
+#jessie:python-apt
+#jessie:python-netaddr
+#stretch:python-apt
+#stretch:python-netaddr
+python-psutil
