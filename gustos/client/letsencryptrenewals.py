@@ -25,6 +25,7 @@
 from os import walk
 from os.path import join
 from datetime import datetime
+from gustos.common.units import COUNT
 
 from OpenSSL.crypto import load_certificate, FILETYPE_PEM
 
@@ -36,8 +37,9 @@ def certFromLine(line):
         return value
 
 class LetsEncryptRenewals(object):
-    def __init__(self, renewalsDir='/etc/letsencrypt/renewal'):
+    def __init__(self, renewalsDir='/etc/letsencrypt/renewal', group="letsencrypt"):
         self._renewalsDir = renewalsDir
+        self._group = group
 
     def findPEMs(self):
         for dirpath, dirnames, filenames in walk(self._renewalsDir):
@@ -54,4 +56,9 @@ class LetsEncryptRenewals(object):
     def listDaysLeft(self):
         return [dict(pem=pem, daysLeft=self.daysLeftOnPEM(pem)) for pem in self.findPEMs()]
 
-
+    def values(self):
+        result = { self._group: {} }
+        for entry in self.listDaysLeft():
+            label = entry['pem'].split('/')[-2]
+            result[self._group][label] = {'days_valid': { COUNT: entry['daysLeft']}}
+        return result
