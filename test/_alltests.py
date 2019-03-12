@@ -3,7 +3,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2011-2014, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2011-2014, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -48,6 +48,7 @@ from simpleschedulertest import SimpleSchedulerTest
 from servicemonitortest import ServiceMonitorTest
 from urlstatustest import UrlStatusTest
 from needrestarttest import NeedRestartTest
+from letsencryptrenewalstest import LetsEncryptRenewalsTest
 
 if __name__ == '__main__':
     main()
