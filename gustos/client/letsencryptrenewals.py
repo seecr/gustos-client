@@ -28,6 +28,7 @@ from datetime import datetime
 from gustos.common.units import COUNT
 
 from OpenSSL.crypto import load_certificate, FILETYPE_PEM
+from ssl import get_server_certificate
 
 def certFromLine(line):
     if not '=' in line:
@@ -50,15 +51,24 @@ class LetsEncryptRenewals(object):
                     yield line
 
     def daysLeftOnPEM(self, filename):
-        cert = load_certificate(FILETYPE_PEM, open(filename).read())
-        return (datetime.strptime(cert.get_notAfter(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
+        def daysLeft(cert):
+            return (datetime.strptime(cert.get_notAfter(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
+
+        _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
+        daysLeftFile = _dl(open(filename).read())
+        daysLeftServer = _dl(self._get_server_certificate(filename.split('/')[-2]))
+        return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
+
+    def _get_server_certificate(self, hostname):
+        return get_server_certificate((hostname, 443))
+
 
     def listDaysLeft(self):
-        return [dict(pem=pem, daysLeft=self.daysLeftOnPEM(pem)) for pem in self.findPEMs()]
+        return [dict(pem=pem, **self.daysLeftOnPEM(pem)) for pem in self.findPEMs()]
 
     def values(self):
         result = { self._group: {} }
         for entry in self.listDaysLeft():
             label = entry['pem'].split('/')[-2]
-            result[self._group][label] = {'days_valid': { COUNT: entry['daysLeft']}}
+            result[self._group][label] = dict(days_valid_file={ COUNT: entry['daysLeftFile']}, days_valid_server={ COUNT: entry['daysLeftServer']})
         return result

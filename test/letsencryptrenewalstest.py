@@ -49,15 +49,20 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
 
         expectedDaysLeft = []
         meters = dict()
-        for name, days in [('aap', 5), ('noot', 12), ('mies', 90)]:
+        for name, daysLeftFile, daysLeftServer in [('aap', 5, 5), ('noot', 12, 5), ('mies', 90, 5)]:
             mkdir(certDir, name)
             certFile = join(certDir, name, 'cert.pem')
-            expectedDaysLeft.append(dict(pem=certFile, daysLeft=days))
-            meters[name] = dict(days_valid=dict(count=days))
+            expectedDaysLeft.append(dict(pem=certFile, daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer))
+            meters[name] = dict(
+                days_valid_file=dict(
+                    count=daysLeftFile), 
+                days_valid_server=dict(
+                    count=daysLeftServer))
             open(join(confDir, "{}.conf".format(name)), "w").write("cert = {}".format(certFile))
-            open(certFile, "w").write(create_cert(daysValid=days))
+            open(certFile, "w").write(create_cert(daysValid=daysLeftFile))
 
         ler = LetsEncryptRenewals(renewalsDir=confDir)
+        ler._get_server_certificate = lambda hostname: create_cert(5)
         self.assertEqual(sorted(expectedDaysLeft), sorted(ler.listDaysLeft()))
         self.assertEqual(dict(letsencrypt=meters), ler.values())
 
