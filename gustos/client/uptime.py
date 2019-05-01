@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2015, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2019 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -22,17 +22,18 @@
 #
 ## end license ##
 
-from .__version__ import VERSION
-from .diskspace import Diskspace
-from .cpuusage import CpuUsage
-from .cpuusagelxc import CpuUsageLxc
-from .memory import Memory
-from .memorylxc import MemoryLxc
-from .bandwidth import Bandwidth
-from .urlstatus import UrlStatus
-from .needrestart import NeedRestart
-from .letsencryptrenewals import LetsEncryptRenewals
-from .uptime import Uptime
+class Uptime(object):
+    def __init__(self, _file="/proc/uptime"):
+        self._filename = _file
 
-from .client import Client
+    def values(self):
+        uptime = idletime = 0
+        try:
+            uptime, idletime = map(float, open(self._filename).read().split(' ', 1))
+        except:
+            pass
 
+        return {
+            'Uptime': {
+                'System': {
+                    'days': {'count': int(uptime/3600/24)}}}}

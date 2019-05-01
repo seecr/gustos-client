@@ -49,6 +49,7 @@ from servicemonitortest import ServiceMonitorTest
 from urlstatustest import UrlStatusTest
 from needrestarttest import NeedRestartTest
 from letsencryptrenewalstest import LetsEncryptRenewalsTest
+from uptimetest import UptimeTest
 
 if __name__ == '__main__':
     main()
