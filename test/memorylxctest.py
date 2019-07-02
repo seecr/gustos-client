@@ -32,7 +32,7 @@ from os.path import join
 class MemoryLxcTest(SeecrTestCase):
     def testMeter(self):
         VM_NAME = "mock_vm"
-        memdir = mkdir(self.tempdir, "sys", "fs", "cgroup", "memory", "lxc", VM_NAME)
+        memdir = mkdir(self.tempdir, "sys", "fs", "cgroup", "memory")
         meter = MemoryLxc(root=self.tempdir, hostname=VM_NAME)
         with open(join(memdir, "memory.usage_in_bytes"), "w") as fp:
             fp.write("241614848\n")

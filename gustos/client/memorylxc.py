@@ -24,7 +24,7 @@
 
 from gustos.common.units import MEMORY
 from socket import gethostname
-from os.path import join
+from os.path import join, isfile
 
 class MemoryLxc(object):
     def __init__(self, group='Memory', chartLabel='Main memory', root="/", hostname=None):
@@ -32,6 +32,8 @@ class MemoryLxc(object):
         self._chartLabel = chartLabel
         realHostName = gethostname().split('.')[0] if hostname is None else hostname
         self._path = join(root, "sys", "fs", "cgroup", "memory", "lxc", realHostName)
+        if not isfile(self._path):
+            self._path = join(root, "sys", "fs", "cgroup", "memory")
 
     def values(self):
         memUsage = {}

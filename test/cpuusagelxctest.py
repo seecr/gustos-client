@@ -32,7 +32,7 @@ from os.path import join
 class CpuUsageLxcTest(SeecrTestCase):
     def testMeter(self):
         VM_NAME = "mock_vm"
-        cpuAcctDir = mkdir(self.tempdir, "sys", "fs", "cgroup", "cpuacct", "lxc", VM_NAME)
+        cpuAcctDir = mkdir(self.tempdir, "sys", "fs", "cgroup", "cpuacct")
         meter = CpuUsageLxc(root=self.tempdir, hostname=VM_NAME)
 
         values = [

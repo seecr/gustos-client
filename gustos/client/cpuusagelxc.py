@@ -24,7 +24,7 @@
 
 from gustos.common.units import PERCENTAGE
 from socket import gethostname
-from os.path import join
+from os.path import join, isfile
 from time import sleep
 
 class CpuUsageLxc(object):
@@ -33,6 +33,8 @@ class CpuUsageLxc(object):
         self._chartLabel = chartLabel
         realHostName = gethostname().split('.')[0] if hostname is None else hostname
         self._path = join(root, "sys", "fs", "cgroup", "cpuacct", "lxc", realHostName)
+        if not isfile(self._path):
+            self._path = join(root, "sys", "fs", "cgroup", "cpuacct")
 
     def values(self):
         return {
