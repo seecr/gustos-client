@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -41,16 +41,19 @@ class Diskspace(object):
         return result
 
     def _diskUsage(self, path):
-        f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files, f_ffree, f_favail, f_flag, f_namemax = self._vfscall(path)
-        values = {
-            'available': f_bsize * f_bavail,
-            'used': (f_blocks - f_bavail) * f_bsize
-        }
-        if f_files != 0:
-            values['inodeAvailable'] = f_favail
-            values['inodeUsed'] = f_files - f_favail
+        try:
+            f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files, f_ffree, f_favail, f_flag, f_namemax = self._vfscall(path)
+            values = {
+                'available': f_bsize * f_bavail,
+                'used': (f_blocks - f_bavail) * f_bsize
+            }
+            if f_files != 0:
+                values['inodeAvailable'] = f_favail
+                values['inodeUsed'] = f_files - f_favail
 
-        return values
+            return values
+        except OSError:
+            return {'available': 0, 'used': 0}
 
     def _vfscall(self, path):
         return statvfs(path)

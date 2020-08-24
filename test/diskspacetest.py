@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -98,6 +98,21 @@ class DiskspaceTest(SeecrTestCase):
             'Disk space': {
                 'root': { 'available': { MEMORY: 807178240 }, 'used': { MEMORY: 11351732224 } },
                 '/data': { 'available': { MEMORY: 807178240 }, 'used': { MEMORY: 11351732224 }
+                }
+            }
+        }, meter.values())
+
+    def testHandleUnexistingPaths(self):
+        def vfscall(path):
+            if path == '/data':
+                raise OSError('No such dir.')
+            return (4096, 4096, 2968484, 197065, 197065, 0, 0, 0, 0, 255)
+        meter = Diskspace(paths=['/', '/data'], chartLabels=['root'])
+        meter._vfscall = vfscall
+        self.assertEqual({
+            'Disk space': {
+                'root': { 'available': { MEMORY: 807178240 }, 'used': { MEMORY: 11351732224 } },
+                '/data': { 'available': { MEMORY: 0 }, 'used': { MEMORY: 0 }
                 }
             }
         }, meter.values())
