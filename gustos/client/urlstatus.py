@@ -1,28 +1,4 @@
-## begin license ##
-#
-# "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
-#
-# Copyright (C) 2012-2015, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
-#
-# This file is part of "Gustos-Client"
-#
-# "Gustos-Client" is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# "Gustos-Client" is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with "Gustos-Client"; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-## end license ##
-
-from urllib2 import urlopen, Request
+from urllib.request import urlopen, Request
 from gustos.common.units import COUNT
 from gustos.client import VERSION
 
@@ -38,7 +14,7 @@ class UrlStatus(object):
         status = self._getUrlStatus()
         if status >= 400:
             self._errorCount += 1
-            print('Url status %s for url %s' % (status, self._url))
+            print(('Url status %s for url %s' % (status, self._url)))
             from sys import stdout; stdout.flush()
         return {
             self._group: {
@@ -50,7 +26,7 @@ class UrlStatus(object):
         try:
             return self._urlopen()
         except Exception as e:
-            print("Error for url %s:\n%s" % (self._url, str(e)))
+            print(("Error for url %s:\n%s" % (self._url, str(e))))
             from sys import stdout; stdout.flush()
             return 1024
 

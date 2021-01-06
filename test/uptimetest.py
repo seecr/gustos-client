@@ -43,7 +43,7 @@ class UptimeTest(SeecrTestCase):
                     }
                 }
             }, meter.values())
-    
+
     def testErrorHandling(self):
         meter = Uptime(_file=join(self.tempdir, "uptime"))
 

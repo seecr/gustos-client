@@ -35,10 +35,14 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
         ler = LetsEncryptRenewals(renewalsDir=join(self.tempdir, 'does_not_exist'))
         self.assertEqual([], list(ler.findPEMs()))
 
-        open(join(self.tempdir, "some_file"), "w").write("nothing in here")
-        open(join(self.tempdir, "some_file.conf"), "w").write("nothing in here either")
-        open(join(self.tempdir, "this.conf"), "w").write("cert = This is not the one you seek")
-        open(join(self.tempdir, "this_one.conf"), "w").write("cert = /path/to/certificate/file.pem")
+        def writeFile(filename, content):
+            with open(join(self.tempdir, filename), "w") as fp:
+                fp.write(content)
+
+        writeFile("some_file", "nothing in here")
+        writeFile("some_file.conf", "nothing in here either")
+        writeFile("this.conf", "cert = This is not the one you seek")
+        writeFile("this_one.conf", "cert = /path/to/certificate/file.pem")
 
         ler = LetsEncryptRenewals(renewalsDir=self.tempdir)
         self.assertEqual(['/path/to/certificate/file.pem'], list(ler.findPEMs()))
@@ -58,12 +62,17 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
                     count=daysLeftFile), 
                 days_valid_server=dict(
                     count=daysLeftServer))
-            open(join(confDir, "{}.conf".format(name)), "w").write("cert = {}".format(certFile))
-            open(certFile, "w").write(create_cert(daysValid=daysLeftFile))
+            with open(join(confDir, "{}.conf".format(name)), "w") as fp:
+                fp.write("cert = {}".format(certFile))
+            with open(certFile, "wb") as fp:
+                fp.write(create_cert(daysValid=daysLeftFile))
 
         ler = LetsEncryptRenewals(renewalsDir=confDir)
         ler._get_server_certificate = lambda hostname: create_cert(5)
-        self.assertEqual(sorted(expectedDaysLeft), sorted(ler.listDaysLeft()))
+        listDaysLeftValues = ler.listDaysLeft()
+        self.assertEqual(len(expectedDaysLeft), len(listDaysLeftValues))
+        for each in expectedDaysLeft:
+            self.assertTrue(each in listDaysLeftValues)
         self.assertEqual(dict(letsencrypt=meters), ler.values())
 
 
@@ -78,8 +87,8 @@ def create_cert(daysValid):
     cert_req.set_pubkey(privkey)
 
     cert = X509()
-    cert.set_notBefore(datetime.now().strftime("%Y%m%d%H%M%SZ"))
-    cert.set_notAfter((datetime.now()+timedelta(days=daysValid)).strftime("%Y%m%d%H%M%SZ"))
+    cert.set_notBefore(datetime.now().strftime("%Y%m%d%H%M%SZ").encode())
+    cert.set_notAfter((datetime.now()+timedelta(days=daysValid)).strftime("%Y%m%d%H%M%SZ").encode())
     cert.set_pubkey(cert_req.get_pubkey())
     cert.sign(privkey, 'sha256')
     return dump_certificate(FILETYPE_PEM, cert)

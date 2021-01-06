@@ -29,7 +29,8 @@ class Uptime(object):
     def values(self):
         uptime = idletime = 0
         try:
-            uptime, idletime = map(float, open(self._filename).read().split(' ', 1))
+            with open(self._filename) as fp:
+                uptime, idletime = list(map(float, fp.read().split(' ', 1)))
         except:
             pass
 

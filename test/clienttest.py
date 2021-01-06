@@ -26,7 +26,7 @@ import sys
 from os import listdir, makedirs
 from os.path import join, isdir
 from shutil import rmtree
-from StringIO import StringIO
+from io import StringIO
 from time import time
 from simplejson import loads
 
@@ -49,11 +49,11 @@ class ClientTest(SeecrTestCase):
         self.mockClock = MockClock()
         self.socket = MockSocket()
         self.client = Client(
-            id="aServer", 
-            gustosHost="HOST", 
-            gustosPort="PORT", 
-            pluginDir=self.pluginDir, 
-            logpath=self.tempdir, 
+            id="aServer",
+            gustosHost="HOST",
+            gustosPort="PORT",
+            pluginDir=self.pluginDir,
+            logpath=self.tempdir,
             threaded=False,
             sender=UdpSender(host="HOST", port="PORT", sok=self.socket))
         self.scheduler = self.client._reactor
@@ -278,15 +278,14 @@ class ClientTest(SeecrTestCase):
     def testSchedulingWithWeightlessReactor(self):
         with Reactor() as reactor:
             sender = UdpSender(host='HOST', port='PORT', sok=self.socket)
-            client = Client(reactor=reactor, 
-                id="aServer", 
-                gustosHost="HOST", gustosPort="PORT", 
+            client = Client(reactor=reactor,
+                id="aServer",
+                gustosHost="HOST", gustosPort="PORT",
                 logpath=self.tempdir, threaded=False,
                 sender=sender)
             t0 = time()
             meter2 = CallTrace('another meter', returnValues=dict(
                 values={'group2': {'chartLabel': {'serieLabel': {'quantity': 42}}}}))
-
             client.addMeter(self.meter, interval=0.09)
             client.addMeter(meter2, interval=0.19)
             self.assertEqual([], self.socket.calledMethodNames())
@@ -355,7 +354,7 @@ class ClientTest(SeecrTestCase):
         if isdir(self.pluginDir):
             rmtree(self.pluginDir)
         makedirs(self.pluginDir)
-        for fileName, content in list(plugins.items()):
+        for fileName, content in plugins.items():
             with open(join(self.pluginDir, fileName), 'w') as f:
                 f.write(content)
 

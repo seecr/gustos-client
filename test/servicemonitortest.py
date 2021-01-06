@@ -38,7 +38,7 @@ class ServiceMonitorTest(SeecrTestCase):
         monitor = ServiceMonitor(names=['service-name'], serviceDir=self.serviceDir)
         monitor._findPid = lambda name: 1234
         monitor._measure = lambda pid: (20, 1024)
-        self.assertEquals([
+        self.assertEqual([
                 {'CPU usage':
                     {'service-name':
                         {'usage':
@@ -55,13 +55,13 @@ class ServiceMonitorTest(SeecrTestCase):
 
     def testNoServices(self):
         monitor = ServiceMonitor(names=[], serviceDir=self.serviceDir)
-        self.assertEquals(None, monitor.values())
+        self.assertEqual(None, monitor.values())
 
     def testMultipleServices(self):
         monitor = ServiceMonitor(names=['service-name-1', 'service-name-2'], serviceDir=self.serviceDir)
         monitor._findPid = lambda name: 1234
         monitor._measure = lambda pid: (20, 1024)
-        self.assertEquals([
+        self.assertEqual([
                 {'CPU usage':
                     {'service-name-1':
                         {'usage':
@@ -95,19 +95,19 @@ class ServiceMonitorTest(SeecrTestCase):
         def measure(*args, **kwargs):
             raise IOError("No such file or directory: '/proc/1234/stat'")
         monitor._measure = measure
-        self.assertEquals(None, monitor.values())
+        self.assertEqual(None, monitor.values())
 
     def testProcessDisapeared(self):
         monitor = ServiceMonitor(names=['service-name-1'], serviceDir=self.serviceDir)
         monitor._findPid = lambda name: None
-        self.assertEquals(None, monitor.values())
+        self.assertEqual(None, monitor.values())
 
     def testOneServiceDown(self):
         monitor = ServiceMonitor(names=['service-name-1', 'service-name-2'], serviceDir=self.serviceDir)
         pids = [None, 1234]
         monitor._findPid = lambda name: pids.pop(0)
         monitor._measure = lambda pid: (20, 1024)
-        self.assertEquals([
+        self.assertEqual([
                 {'CPU usage':
                     {'service-name-2':
                         {'usage':
@@ -131,7 +131,7 @@ class ServiceMonitorTest(SeecrTestCase):
         pids = [1234]
         monitor._findPid = lambda name: pids.pop(0)
         monitor._measure = lambda pid: (20, 1024)
-        self.assertEquals([
+        self.assertEqual([
                 {'CPU usage':
                     {'A':
                         {'usage':
