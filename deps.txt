@@ -1,5 +1,6 @@
 python3-simplejson
-python3-openssl
+#debian:python3-openssl
+#redhat:python3-pyOpenSSL
 python3-gustos2.3-common
 python3-psutil
 python3-netaddr
