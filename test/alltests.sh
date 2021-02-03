@@ -4,7 +4,7 @@
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
 # Copyright (C) 2005-2010 Seek You Too B.V. (CQ2) http://www.cq2.nl
-# Copyright (C) 2011-2014, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2011-2014, 2018, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #

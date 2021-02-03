@@ -2,5 +2,5 @@ python3-simplejson
 python3-openssl
 python3-gustos2.3-common
 python3-psutil
+python3-netaddr
 #buster:python3-apt
-#buster:python3-netaddr
