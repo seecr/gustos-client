@@ -117,9 +117,9 @@ class Bandwidth(object):
             data[host][key]["IN"] = int(match['bytes'])
 
         results = []
-        for host, ports in data.items():
+        for host, ports in list(data.items()):
             portData = {}
-            for (protocol, port), counts in ports.items():
+            for (protocol, port), counts in list(ports.items()):
                 if protocol == 'all' and port == "*":
                     key = self.resolve(host)
                 else:

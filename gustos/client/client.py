@@ -101,7 +101,8 @@ class Client(object):
             def load():
                 moduleGlobals = self._createGlobals(pluginName=pluginName, filePath=filePath)
                 createdLocals = {}
-                execfile(filePath, moduleGlobals, createdLocals)
+                with open(filePath, "rb") as fp:
+                    exec(compile(fp.read(), filePath, 'exec'), moduleGlobals, createdLocals)
                 moduleGlobals.update(createdLocals)
                 return moduleGlobals
             self._plugins[pluginName] = PluginModule(load)

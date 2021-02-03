@@ -26,7 +26,7 @@ import sys
 from os import listdir, makedirs
 from os.path import join, isdir
 from shutil import rmtree
-from StringIO import StringIO
+from io import StringIO
 from time import time
 from simplejson import loads
 

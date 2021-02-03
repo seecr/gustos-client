@@ -31,7 +31,7 @@ SERVICE_DIR = "/etc/service"
 
 def _readStat(pid):
     fields = ("pid", "comm", "state", "ppid", "pgid", "sid", "tty_nr", "tty_pgrp", "flags", "min_flt", "cmin_flt", "maj_flt", "cmaj_flt", "utime", "stime", "cutime", "cstime", "priority", "nicev", "num_threads", "it_real_value", "vsize", "rss", "rsslim", "start_code", "end_code", "start_stack", "esp", "eip", "pending", "blocked", "sigign", "sigcatch", "wchan", "zero1", "zero2", "exit_signal", "cpu", "rt_priority", "policy")
-    return dict(zip(fields, open('/proc/%s/stat' % pid).read().split()))
+    return dict(list(zip(fields, open('/proc/%s/stat' % pid).read().split())))
 
 def _readStatus(pid):
     result = {}

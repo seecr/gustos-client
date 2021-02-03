@@ -33,7 +33,7 @@ from ssl import get_server_certificate
 def certFromLine(line):
     if not '=' in line:
         return None
-    label, value = map(str.strip, line.split('=', 1))
+    label, value = list(map(str.strip, line.split('=', 1)))
     if label == 'cert' and value.endswith('.pem'):
         return value
 
@@ -46,16 +46,17 @@ class LetsEncryptRenewals(object):
         for dirpath, dirnames, filenames in walk(self._renewalsDir):
             confFiles = [join(dirpath, filename) for filename in filenames if filename.endswith('.conf')]
             for confFile in confFiles:
-                certLine = filter(None, [certFromLine(line) for line in open(confFile).readlines()])
-                for line in certLine:
-                    yield line
+                with open(confFile) as fp:
+                    for line in [_f for _f in [certFromLine(line) for line in fp.readlines()] if _f]:
+                        yield line
 
     def daysLeftOnPEM(self, filename):
         def daysLeft(cert):
-            return (datetime.strptime(cert.get_notAfter(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
+            return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
 
         _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
-        daysLeftFile = _dl(open(filename).read())
+        with open(filename) as fp:
+            daysLeftFile = _dl(fp.read())
         daysLeftServer = _dl(self._get_server_certificate(filename.split('/')[-2]))
         return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
 

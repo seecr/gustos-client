@@ -41,7 +41,7 @@ class ThreadPoolTest(SeecrTestCase):
     def testThreadAreRunning(self):
         with ThreadPool(verbose=False) as tp:
             for thread in tp._pools['free']:
-                self.assertTrue(thread.isAlive())
+                self.assertTrue(thread.is_alive())
                 self.assertTrue(thread.isDaemon())
 
     def testSemaphoreUsage(self):

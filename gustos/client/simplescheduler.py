@@ -54,4 +54,4 @@ class SimpleScheduler(object):
     def _sleep(self, t):
         sleep(t)
 
-from Queue import PriorityQueue, Empty
+from queue import PriorityQueue, Empty

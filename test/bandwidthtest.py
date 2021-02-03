@@ -74,7 +74,7 @@ class BandwidthTest(SeecrTestCase):
             }
         ]
 
-        self.assertEqual([['a.vpn - udp 1194', 'a.vpn - udp 1195'], ['hbo.dev - tcp 443'], ['wiki - tcp 443'] ], sorted([sorted(item['Bandwidth'].keys()) for item in meter.values()]))
+        self.assertEqual([['a.vpn - udp 1194', 'a.vpn - udp 1195'], ['hbo.dev - tcp 443'], ['wiki - tcp 443'] ], sorted([sorted(item['Bandwidth'].keys()) for item in list(meter.values())]))
 
     def testNoPorts(self):
         meter = Bandwidth(chain="MONITOR", domainsToStrip=['seecr.nl'])
@@ -87,7 +87,7 @@ class BandwidthTest(SeecrTestCase):
 
 
         meter._readChain = lambda: OUTPUT.split("\n")
-        self.assertEqual(2, len(meter.values()))
+        self.assertEqual(2, len(list(meter.values())))
 
     def testResolveWithNameserver(self):
         meter = Bandwidth(chain="MONITOR", resolve=[('10.9.0.0/16', 'a.ns.seecr.nl')])
