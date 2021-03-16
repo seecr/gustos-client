@@ -33,6 +33,7 @@ from .urlstatus import UrlStatus
 from .needrestart import NeedRestart
 from .letsencryptrenewals import LetsEncryptRenewals
 from .uptime import Uptime
+from .packageupgrade import PackageUpgrade
 
 from .client import Client
 

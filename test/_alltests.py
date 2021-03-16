@@ -37,19 +37,20 @@ from unittest import main
 
 from bandwidthtest import BandwidthTest
 from clienttest import ClientTest
-from diskspacetest import DiskspaceTest
-from cpuusagetest import CpuUsageTest
 from cpuusagelxctest import CpuUsageLxcTest
-from memorytest import MemoryTest
-from memorylxctest import MemoryLxcTest
-from threadpooltest import ThreadPoolTest
-from reportertest import ReporterTest
-from simpleschedulertest import SimpleSchedulerTest
-from servicemonitortest import ServiceMonitorTest
-from urlstatustest import UrlStatusTest
-from needrestarttest import NeedRestartTest
+from cpuusagetest import CpuUsageTest
+from diskspacetest import DiskspaceTest
 from letsencryptrenewalstest import LetsEncryptRenewalsTest
+from memorylxctest import MemoryLxcTest
+from memorytest import MemoryTest
+from needrestarttest import NeedRestartTest
+from packageupgradetest import PackageUpgradeTest
+from reportertest import ReporterTest
+from servicemonitortest import ServiceMonitorTest
+from simpleschedulertest import SimpleSchedulerTest
+from threadpooltest import ThreadPoolTest
 from uptimetest import UptimeTest
+from urlstatustest import UrlStatusTest
 
 if __name__ == '__main__':
     main()
