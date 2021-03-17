@@ -1,8 +1,6 @@
 python-simplejson
 python-openssl
 gustos2.2-common
-#jessie:python-apt
-#jessie:python-netaddr
 #stretch:python-apt
 #stretch:python-netaddr
 python-psutil
