@@ -78,7 +78,7 @@ class PackageUpgrade(object):
 
     def values(self):
         availableUpdates = self._packages.values()
-        result = dict(Updates={k.capitalize():dict(available={COUNT: v}) for k,v in availableUpdates.items()})
+        result = dict(Upgrades={k.capitalize():dict(available={COUNT: v}) for k,v in availableUpdates.items()})
 
         return result
 

@@ -26,7 +26,7 @@ class PackageUpgradeTest(SeecrTestCase):
         packages = DebianPackages(cache=cache)
 
         p = PackageUpgrade(packages=DebianPackages(cache=cache))
-        self.assertEqual({'Updates': {
+        self.assertEqual({'Upgrades': {
             'Security': {'available': {'count': 0}},
             'Packages': {'available': {'count': 0}},
         }}, p.values())
@@ -46,7 +46,7 @@ class PackageUpgradeTest(SeecrTestCase):
         packages = DebianPackages(cache=cache)
 
         p = PackageUpgrade(packages=DebianPackages(cache=cache))
-        self.assertEqual({'Updates': {
+        self.assertEqual({'Upgrades': {
             'Security': {'available': {'count': 1}},
             'Packages': {'available': {'count': 0}},
         }}, p.values())
@@ -66,7 +66,7 @@ class PackageUpgradeTest(SeecrTestCase):
         packages = DebianPackages(cache=cache)
 
         p = PackageUpgrade(packages=DebianPackages(cache=cache))
-        self.assertEqual({'Updates': {
+        self.assertEqual({'Upgrades': {
             'Security': {'available': {'count': 0}},
             'Packages': {'available': {'count': 0}},
         }}, p.values())
@@ -105,10 +105,8 @@ class PackageUpgradeTest(SeecrTestCase):
 
         p = PackageUpgrade(packages=DebianPackages(cache=cache))
         self.assertEqual({
-            'Updates': {
+            'Upgrades': {
                 'Security': { 'available': { 'count': 1 } },
                 'Packages': { 'available': { 'count': 1 } }
             }
         }, p.values())
-
-
