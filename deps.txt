@@ -4,4 +4,6 @@ python3-simplejson
 python3-gustos2.3-common
 python3-psutil
 python3-netaddr
+python3-simplejson
+python3-weightless-core
 #buster:python3-apt
