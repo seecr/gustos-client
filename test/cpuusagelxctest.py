@@ -28,41 +28,87 @@ from seecr.test.utils import mkdir
 from gustos.client import CpuUsageLxc
 from gustos.common.units import PERCENTAGE
 from os.path import join
+from os import listdir
+from shutil import rmtree
 
 class CpuUsageLxcTest(SeecrTestCase):
-    def testMeter(self):
-        VM_NAME = "mock_vm"
-        cpuAcctDir = mkdir(self.tempdir, "sys", "fs", "cgroup", "cpuacct")
-        meter = CpuUsageLxc(root=self.tempdir, hostname=VM_NAME)
+    def testMeterAll(self):
+        VMS = ['vm-1', 'vm-2', 'vm-3']
+        meter = CpuUsageLxc(root=self.tempdir)
+        meter._sleep = lambda: self._writeValues(VMS, values=["294471002154", "294773669923", "296689468871"])
+        self._writeValues(VMS, values=["294371002154", "294715774832", "296185458359"])
 
-        values = [
-            "294371002154", "294715774832", "296185458359", "296639043978",
-            "296660514083", "296673669923", "296689468871", "296703166248",
-            "296726751877", "296739486976", "296753427937", "296764687332",
-            "298103553675", "299159027203", "299175741441", "299189317118",
-            "299204570690", "299217023071", "299229234789", "299248973243",
-            "299262147098", "299273877350"
-        ]
-
-        originalCpuAcctUsage = meter.cpuAcctUsage
-        def cpuAcctUsage():
-            with open(join(cpuAcctDir, "cpuacct.usage"),"w") as fp:
-                fp.write(values.pop(0))
-            return originalCpuAcctUsage()
-        meter.cpuAcctUsage = cpuAcctUsage
-
-        percentages = []
-        while len(values) > 0:
-            percentages.append(meter.cpuUsage(measureTime=0.01))
-
-        self.assertEqual([34, 45, 1, 1, 1, 1, 105, 1, 1, 1, 1], percentages)
-
-        meter.cpuUsage = lambda: 45
         self.assertEqual({
-                'CPU usage': {
-                    'CPU' : {
-                        'usage': { PERCENTAGE: 45 },
+            'CPU usage': {
+                'vm-3': {
+                    'usage': {
+                        'percentage': 50
+                    }
+                },
+                'vm-2': {
+                    'usage': {
+                        'percentage': 5
+                    }
+                },
+                'vm-1': {
+                    'usage': {
+                        'percentage': 10
                     }
                 }
-            },
-            meter.values())
+            }
+        }, meter.values())
+
+    def testMeterAllMissingSecondTiming(self):
+        meter = CpuUsageLxc(root=self.tempdir)
+        meter._sleep = lambda: self._writeValues(['vm-1', 'vm-2'], cleanUp=['vm-3'], values=["294471002154", "294773669923"])
+        self._writeValues(['vm-1', 'vm-2', 'vm-3'], values=["294371002154", "294715774832", "296185458359"])
+
+        self.assertEqual({
+            'CPU usage': {
+                'vm-2': {
+                    'usage': {
+                        'percentage': 5
+                    }
+                },
+                'vm-1': {
+                    'usage': {
+                        'percentage': 10
+                    }
+                }
+            }
+        }, meter.values())
+
+    def testMeterAllMissingFirstTiming(self):
+        meter = CpuUsageLxc(root=self.tempdir)
+        meter._sleep = lambda: self._writeValues(
+            ['vm-1', 'vm-2', 'vm-3'],
+            values=["294471002154", "294773669923", "296689468871"])
+        self._writeValues(['vm-1', 'vm-2'], values=["294371002154", "294715774832"])
+
+        self.assertEqual({
+            'CPU usage': {
+                'vm-2': {
+                    'usage': {
+                        'percentage': 5
+                    }
+                },
+                'vm-1': {
+                    'usage': {
+                        'percentage': 10
+                    }
+                }
+            }
+        }, meter.values())
+
+
+
+    def _writeValues(self, vms, cleanUp=None, values=None):
+        cleanUp = cleanUp or []
+        baseDir = mkdir(self.tempdir, "sys", "fs", "cgroup", "cpu,cpuacct", "lxc")
+        for each in listdir(baseDir):
+            if each in cleanUp:
+                rmtree(join(baseDir, each))
+        for each in vms:
+            vmDir = mkdir(baseDir, each)
+            with open(join(vmDir, 'cpuacct.usage'), "w") as fp:
+                fp.write(values.pop(0))

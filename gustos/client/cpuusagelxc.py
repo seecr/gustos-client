@@ -24,37 +24,46 @@
 
 from gustos.common.units import PERCENTAGE
 from socket import gethostname
-from os.path import join, isfile
+from os.path import join, isfile, isdir
+from os import listdir
 from time import sleep
 
 class CpuUsageLxc(object):
-    def __init__(self, group='CPU usage', chartLabel='CPU', root="/", hostname=None):
+    def __init__(self, group='CPU usage', root="/"):
         self._group = group
-        self._chartLabel = chartLabel
-        realHostName = gethostname().split('.')[0] if hostname is None else hostname
-        self._path = join(root, "sys", "fs", "cgroup", "cpuacct", "lxc", realHostName)
-        if not isfile(self._path):
-            self._path = join(root, "sys", "fs", "cgroup", "cpuacct")
+        self._path = join(root, "sys", "fs", "cgroup", "cpu,cpuacct", "lxc")
+
 
     def values(self):
         return {
-            self._group: {
-                self._chartLabel: {
-                    "usage": { PERCENTAGE: self.cpuUsage() }
-                }
-            }
+            self._group: {vm:dict(usage={PERCENTAGE: delta}) for vm,delta in self.cpuUsage().items()}
         }
     
-    def cpuAcctUsage(self):
-        with open(join(self._path, "cpuacct.usage")) as fp:
+    def cpuAcctUsage(self, vm):
+        filename = join(self._path, vm, "cpuacct.usage")
+        if not isfile(filename):
+            return None
+
+        with open(join(self._path, vm, "cpuacct.usage")) as fp:
             return int(fp.read())
 
-    def cpuUsage(self, measureTime=1):
-        t0 = self.cpuAcctUsage()
-        sleep(measureTime)
-        delta = self.cpuAcctUsage() - t0
+    def cpuUsage(self):
+        vms = [vm for vm in listdir(self._path) if isdir(join(self._path, vm))]
+        t0 = {vm:self.cpuAcctUsage(vm) for vm in vms}
+        self._sleep()
+        t1 = {vm:self.cpuAcctUsage(vm) for vm in vms}
 
-        return int(delta / 10**7)
+        return {vm:delta(t0[vm], t1[vm]) for vm in vms if not t0[vm] is None and not t1[vm] is None}
+
+    def _sleep(self):
+        sleep(1)
 
     def __repr__(self):
         return 'CpuUsageLxc()'
+
+def delta(t0, t1):
+    # t0-t1 is the number of nanoseconds the cgroup used the CPU during the self_measureTime
+    # there are 1.000.000.000 (10^9) nanoseconds in a second
+    #
+    # return the percentage of 1 second used.
+    return int((t1-t0) / 10**7)
