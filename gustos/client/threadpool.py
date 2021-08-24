@@ -85,7 +85,7 @@ class ThreadPool(object):
         sys.stdout.write("{0}\n".format(message))
         sys.stdout.flush()
 
-thread_identifiers = lambda threads: ', '.join(str(t.identifier) for t in sorted(threads))
+thread_identifiers = lambda threads: ', '.join(str(t.identifier) for t in sorted(threads, key=lambda t:t.identifier))
 
 class Thread(_Thread):
     def __init__(self, pool, identifier, *args, **kwargs):
