@@ -28,8 +28,8 @@ from datetime import datetime
 from gustos.common.units import COUNT
 
 from OpenSSL.crypto import load_certificate, FILETYPE_PEM
-from ssl import get_server_certificate
-import pathlib, configparser
+import pathlib, configparser, ssl
+
 
 def certInfo(filename):
     try:
@@ -65,7 +65,10 @@ class LetsEncryptRenewals(object):
         return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
 
     def _get_server_certificate(self, hostname):
-        return get_server_certificate((hostname, 443))
+        conn = ssl.create_connection((hostname, 443))
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        sock = context.wrap_socket(conn, server_hostname=hostname)
+        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True))
 
     def listDaysLeft(self):
         return [dict(info, **self.daysLeftOnPEM(**info)) for info in self.findInfo()]
