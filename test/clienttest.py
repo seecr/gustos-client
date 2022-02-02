@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -22,7 +22,7 @@
 #
 ## end license ##
 
-import sys
+import sys, json, zlib
 from os import listdir, makedirs
 from os.path import join, isdir
 from shutil import rmtree
@@ -49,11 +49,11 @@ class ClientTest(SeecrTestCase):
         self.mockClock = MockClock()
         self.socket = MockSocket()
         self.client = Client(
-            id="aServer", 
-            gustosHost="HOST", 
-            gustosPort="PORT", 
-            pluginDir=self.pluginDir, 
-            logpath=self.tempdir, 
+            id="aServer",
+            gustosHost="HOST",
+            gustosPort="PORT",
+            pluginDir=self.pluginDir,
+            logpath=self.tempdir,
             threaded=False,
             sender=UdpSender(host="HOST", port="PORT", sok=self.socket))
         self.scheduler = self.client._reactor
@@ -77,6 +77,17 @@ class ClientTest(SeecrTestCase):
         self.assertEqual(['sendto', 'close'], self.socket.calledMethodNames())
         self.assertEqual(loads('{"data": {"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 1000}'), loads(self.socket.calledMethods[0].args[0]))
         self.assertEqual(('HOST', 'PORT'), self.socket.calledMethods[0].args[1])
+
+    def testSentLargePacket(self):
+        v = {'group': {f'label{i}': {'serie': {'quantity': 42}} for i in range(100)}}
+        self.assertEqual(4001, len(json.dumps(v)))
+        packet = self.client.report(v)
+        self.assertEqual(['sendto', 'close'], self.socket.calledMethodNames())
+        data = self.socket.calledMethods[0].args[0]
+        self.assertTrue(300 < len(data) < 400, len(data))
+        self.assertEqual(v, json.loads(zlib.decompress(data))['data'])
+
+
 
     def testSentMultiplePackets(self):
         meter = CallTrace('some meter', returnValues=dict(values=[
@@ -278,9 +289,9 @@ class ClientTest(SeecrTestCase):
     def testSchedulingWithWeightlessReactor(self):
         with Reactor() as reactor:
             sender = UdpSender(host='HOST', port='PORT', sok=self.socket)
-            client = Client(reactor=reactor, 
-                id="aServer", 
-                gustosHost="HOST", gustosPort="PORT", 
+            client = Client(reactor=reactor,
+                id="aServer",
+                gustosHost="HOST", gustosPort="PORT",
                 logpath=self.tempdir, threaded=False,
                 sender=sender)
             t0 = time()

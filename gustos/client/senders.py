@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2022 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -23,6 +23,7 @@
 ## end license ##
 
 from socket import socket, AF_INET, SOCK_DGRAM
+import zlib
 
 class UdpSender(object):
     def __init__(self, host, port, sok=None):
@@ -31,9 +32,12 @@ class UdpSender(object):
         self._sok = sok
 
     def send(self, data):
+        bdata = data.encode()
+        if len(bdata) > 2000:
+            bdata = zlib.compress(bdata)
         sok = socket(AF_INET, SOCK_DGRAM) if self._sok is None else self._sok
         try:
-            sok.sendto(data.encode(), (self._host, self._port))
+            sok.sendto(bdata, (self._host, self._port))
         finally:
             sok.close()
 
