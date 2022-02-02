@@ -61,7 +61,10 @@ class LetsEncryptRenewals(object):
         _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
         with open(pem) as fp:
             daysLeftFile = _dl(fp.read())
-        daysLeftServer = _dl(self._get_server_certificate(hostname))
+        try:
+            daysLeftServer = _dl(self._get_server_certificate(hostname))
+        except:
+            daysLeftServer = -100
         return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
 
     def _get_server_certificate(self, hostname):
