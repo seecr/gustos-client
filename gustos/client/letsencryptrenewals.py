@@ -29,47 +29,50 @@ from gustos.common.units import COUNT
 
 from OpenSSL.crypto import load_certificate, FILETYPE_PEM
 from ssl import get_server_certificate
+import pathlib, configparser
 
-def certFromLine(line):
-    if not '=' in line:
+def certInfo(filename):
+    try:
+        c = configparser.ConfigParser()
+        c.read_string('[root]\n' + pathlib.Path(filename).read_text())
+        hostnames = [k for k,v in c.items('[webroot_map')]
+        return {
+            'hostname': hostnames[0],
+            'pem': c.get('root', 'cert'),
+        }
+    except configparser.Error:
         return None
-    label, value = list(map(str.strip, line.split('=', 1)))
-    if label == 'cert' and value.endswith('.pem'):
-        return value
 
 class LetsEncryptRenewals(object):
     def __init__(self, renewalsDir='/etc/letsencrypt/renewal', group="letsencrypt"):
         self._renewalsDir = renewalsDir
         self._group = group
 
-    def findPEMs(self):
+    def findInfo(self):
         for dirpath, dirnames, filenames in walk(self._renewalsDir):
-            confFiles = [join(dirpath, filename) for filename in filenames if filename.endswith('.conf')]
-            for confFile in confFiles:
-                with open(confFile) as fp:
-                    for line in [_f for _f in [certFromLine(line) for line in fp.readlines()] if _f]:
-                        yield line
+            for info in (certInfo(pathlib.Path(dirpath) / n) for n in filenames if n.endswith('.conf')):
+                if not info is None:
+                    yield info
 
-    def daysLeftOnPEM(self, filename):
+    def daysLeftOnPEM(self, pem, hostname):
         def daysLeft(cert):
             return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
 
         _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
-        with open(filename) as fp:
+        with open(pem) as fp:
             daysLeftFile = _dl(fp.read())
-        daysLeftServer = _dl(self._get_server_certificate(filename.split('/')[-2]))
+        daysLeftServer = _dl(self._get_server_certificate(hostname))
         return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
 
     def _get_server_certificate(self, hostname):
         return get_server_certificate((hostname, 443))
 
-
     def listDaysLeft(self):
-        return [dict(pem=pem, **self.daysLeftOnPEM(pem)) for pem in self.findPEMs()]
+        return [dict(info, **self.daysLeftOnPEM(**info)) for info in self.findInfo()]
 
     def values(self):
         result = { self._group: {} }
         for entry in self.listDaysLeft():
-            label = entry['pem'].split('/')[-2]
+            label = entry['hostname']
             result[self._group][label] = dict(days_valid_file={ COUNT: entry['daysLeftFile']}, days_valid_server={ COUNT: entry['daysLeftServer']})
         return result

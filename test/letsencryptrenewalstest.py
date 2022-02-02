@@ -27,8 +27,11 @@ from seecr.test.utils import mkdir
 
 from os.path import join
 from datetime import datetime, timedelta
+import pathlib
 
 from gustos.client import LetsEncryptRenewals
+
+dataPath = pathlib.Path(__file__).parent / 'data'
 
 def writeFile(filename, contents, mode="w"):
     with open(filename, mode) as fp:
@@ -37,15 +40,20 @@ def writeFile(filename, contents, mode="w"):
 class LetsEncryptRenewalsTest(SeecrTestCase):
     def testFindPEMs(self):
         ler = LetsEncryptRenewals(renewalsDir=join(self.tempdir, 'does_not_exist'))
-        self.assertEqual([], list(ler.findPEMs()))
+        self.assertEqual([], list(ler.findInfo()))
 
         writeFile(join(self.tempdir, "some_file"), "nothing in here")
         writeFile(join(self.tempdir, "some_file.conf"), "nothing in here either")
         writeFile(join(self.tempdir, "this.conf"), "cert = This is not the one you seek")
-        writeFile(join(self.tempdir, "this_one.conf"), "cert = /path/to/certificate/file.pem")
+        writeFile(join(self.tempdir, "this_one.conf"), "cert = /path/to/certificate/file.pem\n")
+        writeFile(join(self.tempdir, "this_two.conf"), "cert = /path/to/certificate/file.pem\n[[webroot_map]]\nexample.com = /var/www/html\n")
 
         ler = LetsEncryptRenewals(renewalsDir=self.tempdir)
-        self.assertEqual(['/path/to/certificate/file.pem'], list(ler.findPEMs()))
+        self.assertEqual([{'hostname': 'example.com', 'pem': '/path/to/certificate/file.pem'}], list(ler.findInfo()))
+
+    def testFindInfo(self):
+        ler = LetsEncryptRenewals(renewalsDir=str(dataPath))
+        self.assertEqual([{'hostname': 'example.com','pem': '/etc/letsencrypt/live/example_com-cert/cert.pem'}], list(ler.findInfo()))
 
     def testFindDaysLeft(self):
         confDir = mkdir(self.tempdir, "conf")
@@ -53,16 +61,21 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
 
         expectedDaysLeft = []
         meters = dict()
-        for name, daysLeftFile, daysLeftServer in [('aap', 5, 5), ('noot', 12, 5), ('mies', 90, 5)]:
+        for name, hostnames, daysLeftFile, daysLeftServer in [
+                ( 'aap', ['aap.nl'],              5, 5),
+                ('noot', ['noot.nl'],             12, 5),
+                ('mies', ['mies.nl', 'vuur.nl'], 90, 5)]:
+            hostname = hostnames[0]
             mkdir(certDir, name)
             certFile = join(certDir, name, 'cert.pem')
-            expectedDaysLeft.append(dict(pem=certFile, daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer))
-            meters[name] = dict(
+            expectedDaysLeft.append(dict(pem=certFile, hostname=hostname, daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer))
+            meters[hostname] = dict(
                 days_valid_file=dict(
-                    count=daysLeftFile), 
+                    count=daysLeftFile),
                 days_valid_server=dict(
                     count=daysLeftServer))
-            writeFile(join(confDir, "{}.conf".format(name)), "cert = {}".format(certFile))
+            webroot = '\n'.join(f'{hn} = /var/www/html' for hn in hostnames)
+            writeFile(join(confDir, "{}.conf".format(name)), "cert = {}\n[[webroot_map]]\n{}".format(certFile, webroot))
             writeFile(certFile, create_cert(daysValid=daysLeftFile), mode="wb")
 
         ler = LetsEncryptRenewals(renewalsDir=confDir)
