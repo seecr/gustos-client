@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2015, 2018-2019, 2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2022 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -22,19 +22,18 @@
 #
 ## end license ##
 
-from .__version__ import VERSION
-from .diskspace import Diskspace
-from .cpuusage import CpuUsage
-from .cpuusagelxc import CpuUsageLxc
-from .memory import Memory
-from .memorylxc import MemoryLxc
-from .bandwidth import Bandwidth
-from .urlstatus import UrlStatus
-from .needrestart import NeedRestart
-from .letsencryptrenewals import LetsEncryptRenewals
-from .sslcertificatecheck import SSLCertificateCheck
-from .uptime import Uptime
-from .packageupgrade import PackageUpgrade
 
-from .client import Client
+import json, pathlib
 
+from ._sslcheck import _SSLCheck
+
+class SSLCertificateCheck(_SSLCheck):
+    def __init__(self, configFile, group='sslcheck'):
+        _SSLCheck.__init__(self, group)
+        self._configFile = pathlib.Path(configFile)
+
+    def findInfo(self):
+        if not self._configFile.exists():
+            return
+        for item in json.loads(self._configFile.read_text()):
+            yield {'pem':item['pem'], 'hostname': item['hostname']}

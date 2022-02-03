@@ -27,9 +27,9 @@ from seecr.test.utils import mkdir
 
 from os.path import join
 from datetime import datetime, timedelta
-import pathlib
+import pathlib, json
 
-from gustos.client import LetsEncryptRenewals
+from gustos.client import LetsEncryptRenewals, SSLCertificateCheck
 
 dataPath = pathlib.Path(__file__).parent / 'data'
 
@@ -61,6 +61,7 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
 
         expectedDaysLeft = []
         meters = dict()
+        configForSslCheck = []
         for name, hostnames, daysLeftFile, daysLeftServer in [
                 ( 'aap', ['aap.nl'],              5, 5),
                 ('noot', ['noot.nl'],             12, 5),
@@ -76,13 +77,20 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
                     count=daysLeftServer))
             webroot = '\n'.join(f'{hn} = /var/www/html' for hn in hostnames)
             writeFile(join(confDir, "{}.conf".format(name)), "cert = {}\n[[webroot_map]]\n{}".format(certFile, webroot))
+            configForSslCheck.append(dict(pem=certFile, hostname=hostname))
             writeFile(certFile, create_cert(daysValid=daysLeftFile), mode="wb")
+        configFileForSslCheck = pathlib.Path(self.tempdir) / 'sslcheck.conf'
+        configFileForSslCheck.write_text(json.dumps(configForSslCheck))
 
         ler = LetsEncryptRenewals(renewalsDir=confDir)
         ler._get_server_certificate = lambda hostname: create_cert(5)
         self.assertEqual(sorted(expectedDaysLeft, key=lambda each: each['pem']), sorted(ler.listDaysLeft(), key=lambda each: each['pem']))
         self.assertEqual(dict(letsencrypt=meters), ler.values())
 
+        sslc = SSLCertificateCheck(str(configFileForSslCheck))
+        sslc._get_server_certificate = lambda hostname: create_cert(5)
+        self.assertEqual(sorted(expectedDaysLeft, key=lambda each: each['pem']), sorted(sslc.listDaysLeft(), key=lambda each: each['pem']))
+        self.assertEqual(dict(sslcheck=meters), sslc.values())
 
 def create_cert(daysValid):
     from OpenSSL.crypto import PKey, TYPE_RSA, X509Req, X509, dump_certificate, FILETYPE_PEM

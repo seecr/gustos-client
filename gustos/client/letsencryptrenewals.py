@@ -29,6 +29,7 @@ from gustos.common.units import COUNT
 
 from OpenSSL.crypto import load_certificate, FILETYPE_PEM
 import pathlib, configparser, ssl
+from ._sslcheck import _SSLCheck
 
 
 def certInfo(filename):
@@ -43,10 +44,10 @@ def certInfo(filename):
     except configparser.Error:
         return None
 
-class LetsEncryptRenewals(object):
+class LetsEncryptRenewals(_SSLCheck):
     def __init__(self, renewalsDir='/etc/letsencrypt/renewal', group="letsencrypt"):
+        _SSLCheck.__init__(self, group)
         self._renewalsDir = renewalsDir
-        self._group = group
 
     def findInfo(self):
         for dirpath, dirnames, filenames in walk(self._renewalsDir):
@@ -54,31 +55,3 @@ class LetsEncryptRenewals(object):
                 if not info is None:
                     yield info
 
-    def daysLeftOnPEM(self, pem, hostname):
-        def daysLeft(cert):
-            return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
-
-        _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
-        with open(pem) as fp:
-            daysLeftFile = _dl(fp.read())
-        try:
-            daysLeftServer = _dl(self._get_server_certificate(hostname))
-        except:
-            daysLeftServer = -100
-        return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
-
-    def _get_server_certificate(self, hostname):
-        conn = ssl.create_connection((hostname, 443))
-        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        sock = context.wrap_socket(conn, server_hostname=hostname)
-        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True))
-
-    def listDaysLeft(self):
-        return [dict(info, **self.daysLeftOnPEM(**info)) for info in self.findInfo()]
-
-    def values(self):
-        result = { self._group: {} }
-        for entry in self.listDaysLeft():
-            label = entry['hostname']
-            result[self._group][label] = dict(days_valid_file={ COUNT: entry['daysLeftFile']}, days_valid_server={ COUNT: entry['daysLeftServer']})
-        return result
