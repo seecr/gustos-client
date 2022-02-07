@@ -26,6 +26,7 @@ from datetime import datetime
 from gustos.common.units import COUNT
 
 from OpenSSL.crypto import load_certificate, FILETYPE_PEM
+from os.path import isfile
 import ssl
 
 class _SSLCheck(object):
