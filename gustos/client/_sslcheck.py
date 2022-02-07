@@ -40,8 +40,11 @@ class _SSLCheck(object):
             return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
 
         _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
-        with open(pem) as fp:
-            daysLeftFile = _dl(fp.read())
+        if isfile(pem):
+            with open(pem) as fp:
+                daysLeftFile = _dl(fp.read())
+        else:
+            daysLeftFile = -100
         try:
             daysLeftServer = _dl(self._get_server_certificate(hostname))
         except:
