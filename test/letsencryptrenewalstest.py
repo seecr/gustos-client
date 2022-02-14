@@ -55,6 +55,14 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
         ler = LetsEncryptRenewals(renewalsDir=str(dataPath))
         self.assertEqual([{'hostname': 'example.com','pem': '/etc/letsencrypt/live/example_com-cert/cert.pem'}], list(ler.findInfo()))
 
+    def testNoPemNoData(self):
+        configForSslCheck= [{'pem': '/does/not/exist', 'hostname': 'host.name'}]
+        configFileForSslCheck = pathlib.Path(self.tempdir) / 'sslcheck.conf'
+        configFileForSslCheck.write_text(json.dumps(configForSslCheck))
+        check = SSLCertificateCheck(configFileForSslCheck)
+        check._get_server_certificate = lambda hostname: create_cert(42)
+        self.assertEqual(dict(sslcheck={'host.name': {'days_valid_server': {'count': 42}}}), check.values())
+
     def testFindDaysLeft(self):
         confDir = mkdir(self.tempdir, "conf")
         certDir = mkdir(self.tempdir, "cert")

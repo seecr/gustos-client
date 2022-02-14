@@ -39,18 +39,16 @@ class _SSLCheck(object):
     def daysLeftOnPEM(self, pem, hostname):
         def daysLeft(cert):
             return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
-
+        result = dict()
         _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
         if isfile(pem):
             with open(pem) as fp:
-                daysLeftFile = _dl(fp.read())
-        else:
-            daysLeftFile = -100
+                result['daysLeftFile'] = _dl(fp.read())
         try:
-            daysLeftServer = _dl(self._get_server_certificate(hostname))
+            result['daysLeftServer'] = _dl(self._get_server_certificate(hostname))
         except:
-            daysLeftServer = -100
-        return dict(daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer)
+            pass
+        return result
 
     def _get_server_certificate(self, hostname):
         conn = ssl.create_connection((hostname, 443))
@@ -65,5 +63,9 @@ class _SSLCheck(object):
         result = { self._group: {} }
         for entry in self.listDaysLeft():
             label = entry['hostname']
-            result[self._group][label] = dict(days_valid_file={ COUNT: entry['daysLeftFile']}, days_valid_server={ COUNT: entry['daysLeftServer']})
+            for key, valuekey in [('days_valid_file', 'daysLeftFile'), ('days_valid_server', 'daysLeftServer')]:
+                value = entry.get(valuekey)
+                if value is None:
+                    continue
+                result[self._group].setdefault(label, {})[key] = {COUNT: value}
         return result
