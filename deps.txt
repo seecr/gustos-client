@@ -6,4 +6,4 @@ python3-psutil
 python3-netaddr
 python3-simplejson
 python3-weightless-core
-#buster:python3-apt
+#debian:python3-apt
