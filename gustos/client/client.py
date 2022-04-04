@@ -158,13 +158,15 @@ class Client(object):
             if self._logpath:
                 self._logData(meter, packet)
 
-    def report(self, values):
+    def report(self, values, timestamp=None):
+        if timestamp is None:
+            timestamp = int(self._time() * 1000)
         try:
             packet = {
                 'sender': self._id,
                 'digest': self._digest,
                 'data': values,
-                'timestamp': int(self._time() * 1000)
+                'timestamp': timestamp
             }
             self._sender.send(dumps(packet))
             return packet
