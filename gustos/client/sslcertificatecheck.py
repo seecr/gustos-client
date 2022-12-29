@@ -36,4 +36,4 @@ class SSLCertificateCheck(_SSLCheck):
         if not self._configFile.exists():
             return
         for item in json.loads(self._configFile.read_text()):
-            yield {'pem':item['pem'], 'hostname': item['hostname']}
+            yield {'pem':item.get('pem'), 'hostname': item.get('hostname')}
