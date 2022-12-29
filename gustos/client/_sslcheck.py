@@ -41,7 +41,7 @@ class _SSLCheck(object):
             return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
         result = dict()
         _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
-        if isfile(pem):
+        if pem and isfile(pem):
             with open(pem) as fp:
                 result['daysLeftFile'] = _dl(fp.read())
         try:
