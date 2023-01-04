@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2019, 2023 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -43,7 +43,7 @@ class UptimeTest(SeecrTestCase):
                     }
                 }
             }, meter.values())
-    
+
     def testErrorHandling(self):
         meter = Uptime(_file=join(self.tempdir, "uptime"))
 
