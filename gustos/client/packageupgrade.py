@@ -50,7 +50,11 @@ class DebianPackages(object):
         self._cache = cache
 
     def values(self):
-        self._cache.update()
+        try:
+            self._cache.update()
+        except Exception:
+            # may fail
+            pass
         self._cache.open()
 
         counts=dict(packages=0, security=0)
