@@ -8,7 +8,7 @@ class FileCount(object):
         for pattern in self._file_patterns:
             pattern_dirname = dirname(pattern)
             if not isdir(pattern_dirname):
-                raise ValueError(f"No such directory: {pattern_dirname}")
+                raise ValueError("No such directory: {}".format(pattern_dirname))
 
         self._group = group
 
