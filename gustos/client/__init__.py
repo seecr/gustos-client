@@ -24,6 +24,7 @@
 
 from .__version__ import VERSION
 from .diskspace import Diskspace
+from .filecount import FileCount
 from .cpuusage import CpuUsage
 from .cpuusagelxc import CpuUsageLxc
 from .memory import Memory
