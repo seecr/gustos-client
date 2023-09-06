@@ -40,6 +40,7 @@ from clienttest import ClientTest
 from cpuusagelxctest import CpuUsageLxcTest
 from cpuusagetest import CpuUsageTest
 from diskspacetest import DiskspaceTest
+from filecounttest import FileCountTest
 from letsencryptrenewalstest import LetsEncryptRenewalsTest
 from memorylxctest import MemoryLxcTest
 from memorytest import MemoryTest
