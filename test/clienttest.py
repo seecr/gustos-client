@@ -33,7 +33,10 @@ from simplejson import loads
 from seecr.test import CallTrace, SeecrTestCase
 from seecr.test.io import stderr_replaced
 
-from weightless.io import Reactor
+try:
+    from weightless.io import Reactor
+except ImportError:
+    Reactor = None
 
 from gustos.client import Client
 from gustos.client.simplescheduler import SimpleScheduler
