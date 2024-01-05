@@ -33,6 +33,7 @@ from .bandwidth import Bandwidth
 from .urlstatus import UrlStatus
 from .needrestart import NeedRestart
 from .letsencryptrenewals import LetsEncryptRenewals
+from .lxcuptime import LxcUptime
 from .sslcertificatecheck import SSLCertificateCheck
 from .uptime import Uptime
 from .packageupgrade import PackageUpgrade

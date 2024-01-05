@@ -42,6 +42,7 @@ from cpuusagetest import CpuUsageTest
 from diskspacetest import DiskspaceTest
 from filecounttest import FileCountTest
 from letsencryptrenewalstest import LetsEncryptRenewalsTest
+from lxcuptimetest import LxcUptimeTest
 from memorylxctest import MemoryLxcTest
 from memorytest import MemoryTest
 from needrestarttest import NeedRestartTest
