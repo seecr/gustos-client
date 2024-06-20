@@ -35,8 +35,8 @@ from ._sslcheck import _SSLCheck
 def certInfo(filename):
     try:
         c = configparser.ConfigParser()
-        c.read_string('[root]\n' + pathlib.Path(filename).read_text())
-        hostnames = [k for k,v in c.items('[webroot_map')]
+        c.read_string('[root]\n' + pathlib.Path(filename).read_text().replace('[[webroot_map]]', '[webroot_map]'))
+        hostnames = [k for k,v in c.items('webroot_map')]
         return {
             'hostname': hostnames[0],
             'pem': c.get('root', 'cert'),
