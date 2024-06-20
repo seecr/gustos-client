@@ -25,15 +25,15 @@
 from seecr.test import SeecrTestCase
 
 from gustos.client.reporter import ThreadedReporter
-from threading import activeCount
+from threading import active_count
 from time import sleep
 
 class ReporterTest(SeecrTestCase):
     def testPoolStopsOnStop(self):
 
         reporter = ThreadedReporter()
-        self.assertEqual(11, activeCount())
+        self.assertEqual(11, active_count())
         reporter.stop()
         sleep(0.05)
-        self.assertEqual(1, activeCount())
+        self.assertEqual(1, active_count())
 
