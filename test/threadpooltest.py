@@ -27,7 +27,7 @@ from seecr.test.io import stderr_replaced
 
 from gustos.client.threadpool import ThreadPool
 from time import sleep
-from threading import activeCount
+from threading import active_count
 
 class ThreadPoolTest(SeecrTestCase):
     def testPoolsize(self):
@@ -87,9 +87,9 @@ class ThreadPoolTest(SeecrTestCase):
 
     def testStopThreads(self):
         with ThreadPool(verbose=False):
-            self.assertEqual(11, activeCount())
+            self.assertEqual(11, active_count())
         sleep(0.05)
-        self.assertEqual(1, activeCount())
+        self.assertEqual(1, active_count())
 
     def testNoFreeThreadsAvailable(self):
         t = ThreadPool(size=0, verbose=False)
