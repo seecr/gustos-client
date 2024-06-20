@@ -35,7 +35,7 @@ class ThreadPool(object):
         self._semaphore = Semaphore() if semaphore is None else semaphore
         for i in range(self._size):
             thread = Thread(pool=self, identifier=i)
-            thread.setDaemon(True)
+            thread.daemon = True
             thread.start()
             self._pools['free'].append(thread)
         sleep(0.0001)
