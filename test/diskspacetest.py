@@ -28,92 +28,215 @@ from gustos.client import Diskspace
 
 from gustos.common.units import MEMORY
 
-class DiskspaceTest(SeecrTestCase):
-    def testMeter(self):
-        meter = Diskspace(path='/')
-        meter._vfscall = lambda *args, **kwargs: (4096, 4096, 2968484, 197065, 197065, 0, 0, 0, 0, 255)
 
-        self.assertEqual({
-                'available': 807178240,
-                'used': 12158910464-807178240,
-            }, meter._diskUsage('/'))
-        self.assertEqual({
-                'Disk space': {
-                    '/': {
-                        'available': { MEMORY: 807178240 },
-                        'used': { MEMORY: 11351732224 }
+class DiskspaceTest(SeecrTestCase):
+
+    def test_disable_items(self):
+        meter = Diskspace(path="/", disabled=("inodeAvailable", "inodeUsed", "used"))
+        meter._vfscall = lambda *args, **kwargs: (
+            4096,
+            4096,
+            2968484,
+            197065,
+            197065,
+            327680,
+            291051,
+            291051,
+            4096,
+            255,
+        )
+
+        self.assertEqual(
+            {
+                "available": 807178240,
+                "used": 12158910464 - 807178240,
+                "inodeAvailable": 291051,
+                "inodeUsed": 327680 - 291051,
+            },
+            meter._diskUsage("/"),
+        )
+        self.assertEqual(
+            {
+                "Disk space": {
+                    "/": {
+                        "available": {MEMORY: 807178240},
                     }
                 }
-            }, meter.values())
+            },
+            meter.values(),
+        )
 
-        meter._vfscall = lambda *args, **kwargs: (2048, 4096, 2968484, 197065, 197065, 0, 0, 0, 0, 255)
-        self.assertEqual({
-                'available': 807178240 / 2,
-                'used': (12158910464-807178240) / 2,
-            }, meter._diskUsage('/'))
+    def testMeter(self):
+        meter = Diskspace(path="/")
+        meter._vfscall = lambda *args, **kwargs: (
+            4096,
+            4096,
+            2968484,
+            197065,
+            197065,
+            0,
+            0,
+            0,
+            0,
+            255,
+        )
+
+        self.assertEqual(
+            {
+                "available": 807178240,
+                "used": 12158910464 - 807178240,
+            },
+            meter._diskUsage("/"),
+        )
+        self.assertEqual(
+            {
+                "Disk space": {
+                    "/": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                    }
+                }
+            },
+            meter.values(),
+        )
+
+        meter._vfscall = lambda *args, **kwargs: (
+            2048,
+            4096,
+            2968484,
+            197065,
+            197065,
+            0,
+            0,
+            0,
+            0,
+            255,
+        )
+        self.assertEqual(
+            {
+                "available": 807178240 / 2,
+                "used": (12158910464 - 807178240) / 2,
+            },
+            meter._diskUsage("/"),
+        )
 
     def testIncludeInodeIfAvail(self):
-        meter = Diskspace(path='/')
-        meter._vfscall = lambda *args, **kwargs: (4096, 4096, 2968484, 197065, 197065, 327680, 291051, 291051, 4096, 255)
+        meter = Diskspace(path="/")
+        meter._vfscall = lambda *args, **kwargs: (
+            4096,
+            4096,
+            2968484,
+            197065,
+            197065,
+            327680,
+            291051,
+            291051,
+            4096,
+            255,
+        )
 
-        self.assertEqual({
-            'available': 807178240,
-            'used': 12158910464-807178240,
-            'inodeAvailable': 291051,
-            'inodeUsed': 327680-291051,
-        }, meter._diskUsage('/'))
-        self.assertEqual({
-                'Disk space': {
-                    '/': {
-                        'available': { MEMORY: 807178240 },
-                        'used': { MEMORY: 11351732224 },
-                        'inodeAvailable': { MEMORY: 291051 },
-                        'inodeUsed': { MEMORY: 327680-291051 }
+        self.assertEqual(
+            {
+                "available": 807178240,
+                "used": 12158910464 - 807178240,
+                "inodeAvailable": 291051,
+                "inodeUsed": 327680 - 291051,
+            },
+            meter._diskUsage("/"),
+        )
+        self.assertEqual(
+            {
+                "Disk space": {
+                    "/": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                        "inodeAvailable": {MEMORY: 291051},
+                        "inodeUsed": {MEMORY: 327680 - 291051},
                     }
                 }
-            }, meter.values())
+            },
+            meter.values(),
+        )
 
     def testMeterMultiplePaths(self):
-        meter = Diskspace(paths=['/', '/data'])
-        meter._vfscall = lambda path: (4096, 4096, 2968484, 197065, 197065, 0, 0, 0, 0, 255)
+        meter = Diskspace(paths=["/", "/data"])
+        meter._vfscall = lambda path: (
+            4096,
+            4096,
+            2968484,
+            197065,
+            197065,
+            0,
+            0,
+            0,
+            0,
+            255,
+        )
 
-        self.assertEqual({
-            'Disk space': {
-                '/': {
-                    'available': { MEMORY: 807178240 },
-                    'used': { MEMORY: 11351732224 }
-                },
-                '/data': {
-                    'available': { MEMORY: 807178240 },
-                    'used': { MEMORY: 11351732224 }
+        self.assertEqual(
+            {
+                "Disk space": {
+                    "/": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                    },
+                    "/data": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                    },
                 }
-            }
-        }, meter.values())
+            },
+            meter.values(),
+        )
 
     def testHandleLessLabelsThanPaths(self):
-        meter = Diskspace(paths=['/', '/data'], chartLabels=['root'])
-        meter._vfscall = lambda path: (4096, 4096, 2968484, 197065, 197065, 0, 0, 0, 0, 255)
+        meter = Diskspace(paths=["/", "/data"], chartLabels=["root"])
+        meter._vfscall = lambda path: (
+            4096,
+            4096,
+            2968484,
+            197065,
+            197065,
+            0,
+            0,
+            0,
+            0,
+            255,
+        )
 
-        self.assertEqual({
-            'Disk space': {
-                'root': { 'available': { MEMORY: 807178240 }, 'used': { MEMORY: 11351732224 } },
-                '/data': { 'available': { MEMORY: 807178240 }, 'used': { MEMORY: 11351732224 }
+        self.assertEqual(
+            {
+                "Disk space": {
+                    "root": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                    },
+                    "/data": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                    },
                 }
-            }
-        }, meter.values())
+            },
+            meter.values(),
+        )
 
     def testHandleUnexistingPaths(self):
         def vfscall(path):
-            if path == '/data':
-                raise OSError('No such dir.')
+            if path == "/data":
+                raise OSError("No such dir.")
             return (4096, 4096, 2968484, 197065, 197065, 0, 0, 0, 0, 255)
-        meter = Diskspace(paths=['/', '/data'], chartLabels=['root'])
-        meter._vfscall = vfscall
-        self.assertEqual({
-            'Disk space': {
-                'root': { 'available': { MEMORY: 807178240 }, 'used': { MEMORY: 11351732224 } },
-                '/data': { 'available': { MEMORY: 0 }, 'used': { MEMORY: 0 }
-                }
-            }
-        }, meter.values())
 
+        meter = Diskspace(paths=["/", "/data"], chartLabels=["root"])
+        meter._vfscall = vfscall
+        self.assertEqual(
+            {
+                "Disk space": {
+                    "root": {
+                        "available": {MEMORY: 807178240},
+                        "used": {MEMORY: 11351732224},
+                    },
+                    "/data": {"available": {MEMORY: 0}, "used": {MEMORY: 0}},
+                }
+            },
+            meter.values(),
+        )

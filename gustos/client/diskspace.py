@@ -25,38 +25,63 @@
 from os import statvfs
 from gustos.common.units import MEMORY
 
+
 class Diskspace(object):
-    def __init__(self, path='/', paths=None, group='Disk space', chartLabel=None, chartLabels=None):
+    def __init__(
+        self,
+        path="/",
+        paths=None,
+        group="Disk space",
+        chartLabel=None,
+        chartLabels=None,
+        disabled=None,
+    ):
         self._paths = paths if paths else [path]
         self._group = group
         self._chartLabels = chartLabels if chartLabels else chartLabel or self._paths
+        self._disabled = disabled or tuple()
 
     def values(self):
-        result = { self._group: {} }
+        result = {self._group: {}}
         for i, path in enumerate(self._paths):
             diskUsage = self._diskUsage(path)
             label = self._chartLabels[i] if i < len(self._chartLabels) else path
-            chartData = dict((key, {MEMORY: value}) for (key, value) in list(diskUsage.items()))
+            chartData = dict(
+                (key, {MEMORY: value})
+                for (key, value) in list(diskUsage.items())
+                if key not in self._disabled
+            )
             result[self._group][label] = chartData
         return result
 
     def _diskUsage(self, path):
         try:
-            f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files, f_ffree, f_favail, f_flag, f_namemax = self._vfscall(path)
+            (
+                f_bsize,
+                f_frsize,
+                f_blocks,
+                f_bfree,
+                f_bavail,
+                f_files,
+                f_ffree,
+                f_favail,
+                f_flag,
+                f_namemax,
+            ) = self._vfscall(path)
             values = {
-                'available': f_bsize * f_bavail,
-                'used': (f_blocks - f_bavail) * f_bsize
+                "available": f_bsize * f_bavail,
+                "used": (f_blocks - f_bavail) * f_bsize,
             }
             if f_files != 0:
-                values['inodeAvailable'] = f_favail
-                values['inodeUsed'] = f_files - f_favail
+                values["inodeAvailable"] = f_favail
+                values["inodeUsed"] = f_files - f_favail
 
             return values
         except OSError:
-            return {'available': 0, 'used': 0}
+            return {"available": 0, "used": 0}
 
     def _vfscall(self, path):
         return statvfs(path)
 
     def __repr__(self):
-        return 'Diskspace(paths={})'.format(repr(self._paths))
+        return "Diskspace(paths={})".format(repr(self._paths))

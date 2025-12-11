@@ -27,39 +27,55 @@ from gustos.common.units import MEMORY
 
 KB = 1024
 
+
 class Memory(object):
-    def __init__(self, group='Memory', chartLabel='Main memory'):
+    def __init__(self, group="Memory", chartLabel="Main memory", disabled=None):
         self._group = group
         self._chartLabel = chartLabel
+        self._disabled = disabled or tuple()
 
     def values(self):
         total, memUsage = self._memoryUsage()
-        memUsage['remaining'] = { MEMORY: total - sum([v for d in list(memUsage.values()) for v in list(d.values())]) }
-
-        if all(name in memUsage for name in ['free', 'buffers', 'cached']):
-            memUsage['available'] = { 
-                MEMORY: memUsage['free'][MEMORY] + \
-                        memUsage['buffers'][MEMORY] + \
-                        memUsage['cached'][MEMORY]}
-
-        return {
-            self._group: {
-                self._chartLabel: memUsage
+        if "remaining" not in self._disabled:
+            memUsage["remaining"] = {
+                MEMORY: total
+                - sum([v for d in list(memUsage.values()) for v in list(d.values())])
             }
-        }
+
+        if "available" not in self._disabled:
+            if all(name in memUsage for name in ["free", "buffers", "cached"]):
+                memUsage["available"] = {
+                    MEMORY: memUsage["free"][MEMORY]
+                    + memUsage["buffers"][MEMORY]
+                    + memUsage["cached"][MEMORY]
+                }
+
+        return {self._group: {self._chartLabel: memUsage}}
 
     def _memoryUsage(self):
         memInfo = self._readProcMeminfo()
         infoDict = {}
-        for k, v in [('free', 'MemFree'), ('slab', 'Slab'), ('buffers', 'Buffers'), ('cached', 'Cached')]:
+        for k, v in [
+            ("free", "MemFree"),
+            ("slab", "Slab"),
+            ("buffers", "Buffers"),
+            ("cached", "Cached"),
+        ]:
+            if k in self._disabled:
+                continue
             if v in memInfo:
-                infoDict[k] = { MEMORY: memInfo[v] * KB}
-        return memInfo['MemTotal'] * KB, infoDict
+                infoDict[k] = {MEMORY: memInfo[v] * KB}
+        return memInfo["MemTotal"] * KB, infoDict
 
     def _readProcMeminfo(self):
-        return dict([(k, int(v.strip().split()[0]))
-            for k, v in (line.split(':', 1)
-                for line in open('/proc/meminfo').readlines())])
+        return dict(
+            [
+                (k, int(v.strip().split()[0]))
+                for k, v in (
+                    line.split(":", 1) for line in open("/proc/meminfo").readlines()
+                )
+            ]
+        )
 
     def __repr__(self):
-        return 'Memory()'
+        return "Memory()"

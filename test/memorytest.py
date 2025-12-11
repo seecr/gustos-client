@@ -27,51 +27,69 @@ from seecr.test import SeecrTestCase
 from gustos.client import Memory
 from gustos.common.units import MEMORY
 
+
 class MemoryTest(SeecrTestCase):
     def testMeter(self):
         meter = Memory()
-        meter._readProcMeminfo = lambda: {'MemFree': 142696, 'MemTotal': 4035280, 'Slab': 1234, 'Buffers': 48444, 'Cached': 275152}
+        meter._readProcMeminfo = lambda: {
+            "MemFree": 142696,
+            "MemTotal": 4035280,
+            "Slab": 1234,
+            "Buffers": 48444,
+            "Cached": 275152,
+        }
 
-        self.assertEqual({
-                'Memory': {
-                    'Main memory' : {
-                        'free': {
-                            MEMORY: 142696 * 1024
-                        },
-                        'slab': {
-                            MEMORY: 1234 * 1024
-                        },
-                        'buffers': {
-                            MEMORY: 48444 * 1024
-                        },
-                        'cached': {
-                            MEMORY: 275152 * 1024
-                        },
-                        'remaining': {
+        self.assertEqual(
+            {
+                "Memory": {
+                    "Main memory": {
+                        "free": {MEMORY: 142696 * 1024},
+                        "slab": {MEMORY: 1234 * 1024},
+                        "buffers": {MEMORY: 48444 * 1024},
+                        "cached": {MEMORY: 275152 * 1024},
+                        "remaining": {
                             MEMORY: (4035280 - 142696 - 1234 - 48444 - 275152) * 1024
                         },
-                        'available': {
-                            MEMORY: (142696 + 48444 + 275152) * 1024
-                        }
+                        "available": {MEMORY: (142696 + 48444 + 275152) * 1024},
                     }
                 }
             },
-            meter.values())
+            meter.values(),
+        )
+
+    def testMeter(self):
+        meter = Memory(disabled=("slab", "buffers", "cached", "remaining", "available"))
+        meter._readProcMeminfo = lambda: {
+            "MemFree": 142696,
+            "MemTotal": 4035280,
+            "Slab": 1234,
+            "Buffers": 48444,
+            "Cached": 275152,
+        }
+
+        self.assertEqual(
+            {
+                "Memory": {
+                    "Main memory": {
+                        "free": {MEMORY: 142696 * 1024},
+                    }
+                }
+            },
+            meter.values(),
+        )
 
     def testOnlyMemTotalAndFree(self):
         meter = Memory()
-        meter._readProcMeminfo = lambda: {'MemFree': 142696, 'MemTotal': 4035280}
+        meter._readProcMeminfo = lambda: {"MemFree": 142696, "MemTotal": 4035280}
 
-        self.assertEqual({
-                'Memory': {
-                    'Main memory': {
-                        'free': {
-                            MEMORY: 142696 * 1024
-                        },
-                        'remaining': {
-                            MEMORY: (4035280 - 142696) * 1024
-                        }
+        self.assertEqual(
+            {
+                "Memory": {
+                    "Main memory": {
+                        "free": {MEMORY: 142696 * 1024},
+                        "remaining": {MEMORY: (4035280 - 142696) * 1024},
                     }
                 }
-            }, meter.values())
-
+            },
+            meter.values(),
+        )
