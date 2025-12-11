@@ -29,20 +29,25 @@ KB = 1024
 
 
 class Memory(object):
-    def __init__(self, group="Memory", chartLabel="Main memory", disabled=None):
+    def __init__(self, group="Memory", chartLabel="Main memory", enabled=None):
         self._group = group
         self._chartLabel = chartLabel
-        self._disabled = disabled or tuple()
+        self._enabled = enabled or tuple()
+
+    def _is_enabled(self, name):
+        if len(self._enabled) == 0:
+            return True
+        return name in self._enabled
 
     def values(self):
         total, memUsage = self._memoryUsage()
-        if "remaining" not in self._disabled:
+        if self._is_enabled("remaining"):
             memUsage["remaining"] = {
                 MEMORY: total
                 - sum([v for d in list(memUsage.values()) for v in list(d.values())])
             }
 
-        if "available" not in self._disabled:
+        if self._is_enabled("available"):
             if all(name in memUsage for name in ["free", "buffers", "cached"]):
                 memUsage["available"] = {
                     MEMORY: memUsage["free"][MEMORY]
@@ -61,10 +66,9 @@ class Memory(object):
             ("buffers", "Buffers"),
             ("cached", "Cached"),
         ]:
-            if k in self._disabled:
-                continue
-            if v in memInfo:
-                infoDict[k] = {MEMORY: memInfo[v] * KB}
+            if self._is_enabled(k):
+                if v in memInfo:
+                    infoDict[k] = {MEMORY: memInfo[v] * KB}
         return memInfo["MemTotal"] * KB, infoDict
 
     def _readProcMeminfo(self):

@@ -57,8 +57,8 @@ class MemoryTest(SeecrTestCase):
             meter.values(),
         )
 
-    def testMeter(self):
-        meter = Memory(disabled=("slab", "buffers", "cached", "remaining", "available"))
+    def test_meter_enabled(self):
+        meter = Memory(enabled=("free",))
         meter._readProcMeminfo = lambda: {
             "MemFree": 142696,
             "MemTotal": 4035280,

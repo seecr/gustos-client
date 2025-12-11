@@ -31,8 +31,8 @@ from gustos.common.units import MEMORY
 
 class DiskspaceTest(SeecrTestCase):
 
-    def test_disable_items(self):
-        meter = Diskspace(path="/", disabled=("inodeAvailable", "inodeUsed", "used"))
+    def test_enabled_items(self):
+        meter = Diskspace(path="/", enabled=("available",))
         meter._vfscall = lambda *args, **kwargs: (
             4096,
             4096,

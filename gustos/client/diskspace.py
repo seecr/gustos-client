@@ -34,12 +34,17 @@ class Diskspace(object):
         group="Disk space",
         chartLabel=None,
         chartLabels=None,
-        disabled=None,
+        enabled=None,
     ):
         self._paths = paths if paths else [path]
         self._group = group
         self._chartLabels = chartLabels if chartLabels else chartLabel or self._paths
-        self._disabled = disabled or tuple()
+        self._enabled = enabled or tuple()
+
+    def _is_enabled(self, name):
+        if len(self._enabled) == 0:
+            return True
+        return name in self._enabled
 
     def values(self):
         result = {self._group: {}}
@@ -49,7 +54,7 @@ class Diskspace(object):
             chartData = dict(
                 (key, {MEMORY: value})
                 for (key, value) in list(diskUsage.items())
-                if key not in self._disabled
+                if self._is_enabled(key)
             )
             result[self._group][label] = chartData
         return result
