@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2020, 2025 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -64,6 +64,11 @@ class DiskspaceTest(SeecrTestCase):
                 }
             },
             meter.values(),
+        )
+
+    def test_meter_invalid_keys(self):
+        self.assertRaises(
+            ValueError, lambda: Diskspace(path="/", enabled=("available", "invalidkey"))
         )
 
     def testMeter(self):

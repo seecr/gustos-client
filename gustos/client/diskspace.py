@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2020, 2025 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -24,6 +24,14 @@
 
 from os import statvfs
 from gustos.common.units import MEMORY
+from ._utils import validate_enabled
+
+KEY_AVAILABLE = "available"
+KEY_USED = "used"
+KEY_INODE_AVAILABLE = "inodeAvailable"
+KEY_INODE_USED = "inodeUsed"
+
+KEYS = {KEY_AVAILABLE, KEY_USED, KEY_INODE_AVAILABLE, KEY_INODE_USED}
 
 
 class Diskspace(object):
@@ -39,7 +47,7 @@ class Diskspace(object):
         self._paths = paths if paths else [path]
         self._group = group
         self._chartLabels = chartLabels if chartLabels else chartLabel or self._paths
-        self._enabled = enabled or tuple()
+        self._enabled = validate_enabled(enabled, KEYS)
 
     def _is_enabled(self, name):
         if len(self._enabled) == 0:
@@ -74,16 +82,16 @@ class Diskspace(object):
                 f_namemax,
             ) = self._vfscall(path)
             values = {
-                "available": f_bsize * f_bavail,
-                "used": (f_blocks - f_bavail) * f_bsize,
+                KEY_AVAILABLE: f_bsize * f_bavail,
+                KEY_USED: (f_blocks - f_bavail) * f_bsize,
             }
             if f_files != 0:
-                values["inodeAvailable"] = f_favail
-                values["inodeUsed"] = f_files - f_favail
+                values[KEY_INODE_AVAILABLE] = f_favail
+                values[KEY_INODE_USED] = f_files - f_favail
 
             return values
         except OSError:
-            return {"available": 0, "used": 0}
+            return {KEY_AVAILABLE: 0, KEY_USED: 0}
 
     def _vfscall(self, path):
         return statvfs(path)
