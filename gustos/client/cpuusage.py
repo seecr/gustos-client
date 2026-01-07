@@ -29,7 +29,7 @@ from gustos.common.units import PERCENTAGE
 
 
 class CpuUsage(object):
-    def __init__(self, measuringTime=1, group='CPU usage', subgroup='CPU'):
+    def __init__(self, measuringTime=1, group="CPU usage", subgroup="CPU"):
         self._measuringTime = measuringTime
         self._group = group
         self._subgroup = subgroup
@@ -38,13 +38,9 @@ class CpuUsage(object):
         usage, iowait = self.usage()
         return {
             self._group: {
-                self._subgroup : {
-                    'usage': {
-                        PERCENTAGE: usage
-                    },
-                    'iowait': {
-                        PERCENTAGE: iowait
-                    }
+                self._subgroup: {
+                    "usage": {PERCENTAGE: usage},
+                    "iowait": {PERCENTAGE: iowait},
                 }
             }
         }
@@ -58,22 +54,32 @@ class CpuUsage(object):
         total1 = user1 + nice1 + system1 + idle1 + iowait1 + irq1 + srq1
 
         totalTime = float(total1 - total0)
-        cpuTime = float((user1-user0) + (nice1-nice0) + (system1-system0))
-        ioWait = float(iowait1-iowait0)
+        cpuTime = float((user1 - user0) + (nice1 - nice0) + (system1 - system0))
+        ioWait = float(iowait1 - iowait0)
         return abs(cpuTime / totalTime) * 100, abs(ioWait / totalTime) * 100
 
     def _readProcState(self):
-        return open('/proc/stat').readline().strip()
+        return open("/proc/stat").readline().strip()
 
     def _sleep(self):
         sleep(self._measuringTime)
 
     def readJiffies(self):
-        _, user, nice, system, idle, iowait, irq, srq, _ = WS.split(self._readProcState(), maxsplit=8)
-        return int(user), int(nice), int(system), int(idle), int(iowait), int(irq), int(srq)
+        _, user, nice, system, idle, iowait, irq, srq, _ = WS.split(
+            self._readProcState(), maxsplit=8
+        )
+        return (
+            int(user),
+            int(nice),
+            int(system),
+            int(idle),
+            int(iowait),
+            int(irq),
+            int(srq),
+        )
 
     def __repr__(self):
-        return 'CpuUsage()'
+        return "CpuUsage()"
 
-WS = compile('\s+')
 
+WS = compile(r"\s+")

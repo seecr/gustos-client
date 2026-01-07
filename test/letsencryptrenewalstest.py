@@ -26,42 +26,66 @@ from seecr.test import SeecrTestCase
 from seecr.test.utils import mkdir
 
 from os.path import join
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pathlib, json
 
 from gustos.client import LetsEncryptRenewals, SSLCertificateCheck
 
-dataPath = pathlib.Path(__file__).parent / 'data'
+dataPath = pathlib.Path(__file__).parent / "data"
+
 
 def writeFile(filename, contents, mode="w"):
     with open(filename, mode) as fp:
         fp.write(contents)
 
+
 class LetsEncryptRenewalsTest(SeecrTestCase):
     def testFindPEMs(self):
-        ler = LetsEncryptRenewals(renewalsDir=join(self.tempdir, 'does_not_exist'))
+        ler = LetsEncryptRenewals(renewalsDir=join(self.tempdir, "does_not_exist"))
         self.assertEqual([], list(ler.findInfo()))
 
         writeFile(join(self.tempdir, "some_file"), "nothing in here")
         writeFile(join(self.tempdir, "some_file.conf"), "nothing in here either")
-        writeFile(join(self.tempdir, "this.conf"), "cert = This is not the one you seek")
-        writeFile(join(self.tempdir, "this_one.conf"), "cert = /path/to/certificate/file.pem\n")
-        writeFile(join(self.tempdir, "this_two.conf"), "cert = /path/to/certificate/file.pem\n[[webroot_map]]\nexample.com = /var/www/html\n")
+        writeFile(
+            join(self.tempdir, "this.conf"), "cert = This is not the one you seek"
+        )
+        writeFile(
+            join(self.tempdir, "this_one.conf"),
+            "cert = /path/to/certificate/file.pem\n",
+        )
+        writeFile(
+            join(self.tempdir, "this_two.conf"),
+            "cert = /path/to/certificate/file.pem\n[[webroot_map]]\nexample.com = /var/www/html\n",
+        )
 
         ler = LetsEncryptRenewals(renewalsDir=self.tempdir)
-        self.assertEqual([{'hostname': 'example.com', 'pem': '/path/to/certificate/file.pem'}], list(ler.findInfo()))
+        self.assertEqual(
+            [{"hostname": "example.com", "pem": "/path/to/certificate/file.pem"}],
+            list(ler.findInfo()),
+        )
 
     def testFindInfo(self):
         ler = LetsEncryptRenewals(renewalsDir=str(dataPath))
-        self.assertEqual([{'hostname': 'example.com','pem': '/etc/letsencrypt/live/example_com-cert/cert.pem'}], list(ler.findInfo()))
+        self.assertEqual(
+            [
+                {
+                    "hostname": "example.com",
+                    "pem": "/etc/letsencrypt/live/example_com-cert/cert.pem",
+                }
+            ],
+            list(ler.findInfo()),
+        )
 
     def testNoPemNoData(self):
-        configForSslCheck= [{'pem': '/does/not/exist', 'hostname': 'host.name'}]
-        configFileForSslCheck = pathlib.Path(self.tempdir) / 'sslcheck.conf'
+        configForSslCheck = [{"pem": "/does/not/exist", "hostname": "host.name"}]
+        configFileForSslCheck = pathlib.Path(self.tempdir) / "sslcheck.conf"
         configFileForSslCheck.write_text(json.dumps(configForSslCheck))
         check = SSLCertificateCheck(configFileForSslCheck)
         check._get_server_certificate = lambda hostname: create_cert(42)
-        self.assertEqual(dict(sslcheck={'host.name': {'days_valid_server': {'count': 42}}}), check.values())
+        self.assertEqual(
+            dict(sslcheck={"host.name": {"days_valid_server": {"count": 42}}}),
+            check.values(),
+        )
 
     def testFindDaysLeft(self):
         confDir = mkdir(self.tempdir, "conf")
@@ -71,48 +95,81 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
         meters = dict()
         configForSslCheck = []
         for name, hostnames, daysLeftFile, daysLeftServer in [
-                ( 'aap', ['aap.nl'],              5, 5),
-                ('noot', ['noot.nl'],             12, 5),
-                ('mies', ['mies.nl', 'vuur.nl'], 90, 5)]:
+            ("aap", ["aap.nl"], 5, 5),
+            ("noot", ["noot.nl"], 12, 5),
+            ("mies", ["mies.nl", "vuur.nl"], 90, 5),
+        ]:
             hostname = hostnames[0]
             mkdir(certDir, name)
-            certFile = join(certDir, name, 'cert.pem')
-            expectedDaysLeft.append(dict(pem=certFile, hostname=hostname, daysLeftFile=daysLeftFile, daysLeftServer=daysLeftServer))
+            certFile = join(certDir, name, "cert.pem")
+            expectedDaysLeft.append(
+                dict(
+                    pem=certFile,
+                    hostname=hostname,
+                    daysLeftFile=daysLeftFile,
+                    daysLeftServer=daysLeftServer,
+                )
+            )
             meters[hostname] = dict(
-                days_valid_file=dict(
-                    count=daysLeftFile),
-                days_valid_server=dict(
-                    count=daysLeftServer))
-            webroot = '\n'.join(f'{hn} = /var/www/html' for hn in hostnames)
-            writeFile(join(confDir, "{}.conf".format(name)), "cert = {}\n[[webroot_map]]\n{}".format(certFile, webroot))
+                days_valid_file=dict(count=daysLeftFile),
+                days_valid_server=dict(count=daysLeftServer),
+            )
+            webroot = "\n".join(f"{hn} = /var/www/html" for hn in hostnames)
+            writeFile(
+                join(confDir, "{}.conf".format(name)),
+                "cert = {}\n[[webroot_map]]\n{}".format(certFile, webroot),
+            )
             configForSslCheck.append(dict(pem=certFile, hostname=hostname))
             writeFile(certFile, create_cert(daysValid=daysLeftFile), mode="wb")
-        configFileForSslCheck = pathlib.Path(self.tempdir) / 'sslcheck.conf'
+        configFileForSslCheck = pathlib.Path(self.tempdir) / "sslcheck.conf"
         configFileForSslCheck.write_text(json.dumps(configForSslCheck))
 
         ler = LetsEncryptRenewals(renewalsDir=confDir)
         ler._get_server_certificate = lambda hostname: create_cert(5)
-        self.assertEqual(sorted(expectedDaysLeft, key=lambda each: each['pem']), sorted(ler.listDaysLeft(), key=lambda each: each['pem']))
+        self.assertEqual(
+            sorted(expectedDaysLeft, key=lambda each: each["pem"]),
+            sorted(ler.listDaysLeft(), key=lambda each: each["pem"]),
+        )
         self.assertEqual(dict(letsencrypt=meters), ler.values())
 
         sslc = SSLCertificateCheck(str(configFileForSslCheck))
         sslc._get_server_certificate = lambda hostname: create_cert(5)
-        self.assertEqual(sorted(expectedDaysLeft, key=lambda each: each['pem']), sorted(sslc.listDaysLeft(), key=lambda each: each['pem']))
+        self.assertEqual(
+            sorted(expectedDaysLeft, key=lambda each: each["pem"]),
+            sorted(sslc.listDaysLeft(), key=lambda each: each["pem"]),
+        )
         self.assertEqual(dict(sslcheck=meters), sslc.values())
 
+
 def create_cert(daysValid):
-    from OpenSSL.crypto import PKey, TYPE_RSA, X509Req, X509, dump_certificate, FILETYPE_PEM
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes
 
-    privkey = PKey()
-    privkey.generate_key(TYPE_RSA, 2048)
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
 
-    cert_req = X509Req()
-    cert_req.get_subject().OU = "My Test Certificate"
-    cert_req.set_pubkey(privkey)
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COMMON_NAME, "My Test Certificate"),
+        ]
+    )
 
-    cert = X509()
-    cert.set_notBefore(datetime.now().strftime("%Y%m%d%H%M%SZ").encode())
-    cert.set_notAfter((datetime.now()+timedelta(days=daysValid)).strftime("%Y%m%d%H%M%SZ").encode())
-    cert.set_pubkey(cert_req.get_pubkey())
-    cert.sign(privkey, 'sha256')
-    return dump_certificate(FILETYPE_PEM, cert)
+    now = datetime.now(tz=timezone.utc)
+
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(days=daysValid))
+        .sign(private_key, hashes.SHA256())
+    )
+
+    return cert.public_bytes(serialization.Encoding.PEM)

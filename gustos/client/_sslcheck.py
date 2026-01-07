@@ -22,12 +22,14 @@
 #
 ## end license ##
 
-from datetime import datetime
+from datetime import datetime, timezone
 from gustos.common.units import COUNT
 
-from OpenSSL.crypto import load_certificate, FILETYPE_PEM
+from cryptography import x509
+
 from os.path import isfile
 import ssl
+
 
 class _SSLCheck(object):
     def __init__(self, group):
@@ -38,15 +40,19 @@ class _SSLCheck(object):
 
     def daysLeftOnPEM(self, pem, hostname):
         def daysLeft(cert):
-            return (datetime.strptime(cert.get_notAfter().decode(),"%Y%m%d%H%M%SZ").date()-datetime.now().date()).days
+            return (
+                cert.not_valid_after_utc.date() - datetime.now(tz=timezone.utc).date()
+            ).days
+
         result = dict()
-        _dl = lambda cert: daysLeft(load_certificate(FILETYPE_PEM, cert))
+        _dl = lambda cert: daysLeft(x509.load_pem_x509_certificate(cert))
         if pem and isfile(pem):
             with open(pem) as fp:
-                result['daysLeftFile'] = _dl(fp.read())
+                result["daysLeftFile"] = _dl(fp.read().encode(encoding="utf-8"))
         try:
-            result['daysLeftServer'] = _dl(self._get_server_certificate(hostname))
+            result["daysLeftServer"] = _dl(self._get_server_certificate(hostname))
         except:
+            raise
             pass
         return result
 
@@ -60,10 +66,13 @@ class _SSLCheck(object):
         return [dict(info, **self.daysLeftOnPEM(**info)) for info in self.findInfo()]
 
     def values(self):
-        result = { self._group: {} }
+        result = {self._group: {}}
         for entry in self.listDaysLeft():
-            label = entry['hostname']
-            for key, valuekey in [('days_valid_file', 'daysLeftFile'), ('days_valid_server', 'daysLeftServer')]:
+            label = entry["hostname"]
+            for key, valuekey in [
+                ("days_valid_file", "daysLeftFile"),
+                ("days_valid_server", "daysLeftServer"),
+            ]:
                 value = entry.get(valuekey)
                 if value is None:
                     continue
