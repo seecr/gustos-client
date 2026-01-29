@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2015, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2015, 2018, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -26,8 +26,15 @@ from traceback import print_exc
 from gustos.common.units import COUNT
 from os.path import isfile
 from subprocess import Popen, PIPE
-from distutils.version import LooseVersion
+
+try:
+    # Python 3.13+
+    from looseversion import LooseVersion
+except ImportError:
+    # Pre python 3.13
+    from distutils.version import LooseVersion
 import sys
+
 
 class RedhatPackages(object):
     def values(self):
@@ -36,16 +43,20 @@ class RedhatPackages(object):
         if process.returncode != 0:
             raise RuntimeError("Error while updating yum:" + pErr)
 
-        process = Popen(["yum", "--quiet", "updateinfo", "list", "sec"], stdout=PIPE, stderr=PIPE)
+        process = Popen(
+            ["yum", "--quiet", "updateinfo", "list", "sec"], stdout=PIPE, stderr=PIPE
+        )
         pOut, pErr = process.communicate()
         if process.returncode != 0:
             raise RuntimeError("Error during yum updateinfo:" + pErr)
         return 0 if len(pOut.strip()) == 0 else len(pOut.strip().split("\n"))
 
+
 class DebianPackages(object):
     def __init__(self, cache=None):
         if cache is None:
             from apt import Cache
+
             cache = Cache()
         self._cache = cache
 
@@ -57,15 +68,16 @@ class DebianPackages(object):
             pass
         self._cache.open()
 
-        counts=dict(packages=0, security=0)
+        counts = dict(packages=0, security=0)
         for pkg in self._cache:
             if pkg.is_installed and pkg.is_upgradable:
                 for origin in pkg.candidate.origins:
-                    if origin.site == 'security.debian.org':
-                        counts['security'] += 1
+                    if origin.site == "security.debian.org":
+                        counts["security"] += 1
                     else:
-                        counts['packages'] += 1
+                        counts["packages"] += 1
         return counts
+
 
 class PackageUpgrade(object):
 
@@ -82,11 +94,14 @@ class PackageUpgrade(object):
 
     def values(self):
         availableUpdates = self._packages.values()
-        result = dict(Upgrades={k.capitalize():dict(available={COUNT: v}) for k,v in availableUpdates.items()})
+        result = dict(
+            Upgrades={
+                k.capitalize(): dict(available={COUNT: v})
+                for k, v in availableUpdates.items()
+            }
+        )
 
         return result
 
     def __repr__(self):
-        return 'SecurityUpdates()'
-
-
+        return "SecurityUpdates()"
