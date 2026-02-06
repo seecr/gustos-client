@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2021, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -30,12 +30,14 @@ from traceback import print_exc, format_exc
 from simplejson import dumps
 
 from gustos.common import digest, print2
-from .senders import UdpSender, TcpSender
+from .senders import UdpSender, TcpSender, MultiSender
 from .reporter import ThreadedReporter, UnthreadedReporter
 from .simplescheduler import SimpleScheduler
 
-from .debug import listen                    #DO_NOT_DISTRIBUTE
-listen()                                    #DO_NOT_DISTRIBUTE
+from .debug import listen  # DO_NOT_DISTRIBUTE
+
+listen()  # DO_NOT_DISTRIBUTE
+
 
 class PluginModule(object):
     def __init__(self, load):
@@ -51,17 +53,37 @@ class PluginModule(object):
         return self._globals[attr]
 
     def __setattr__(self, name, value):
-        if name in ['_loadGlobals', '_globals']:
+        if name in ["_loadGlobals", "_globals"]:
             return object.__setattr__(self, name, value)
         raise AttributeError("Set of an attribute is not allowed on a PluginModule")
 
+
 class Client(object):
-    def __init__(self, id, gustosHost, gustosPort, pluginDir=None, logpath=None, useTcp=False, reactor=None, threaded=True, threadPoolSize=10, verbose=False, sender=None):
+    def __init__(
+        self,
+        id,
+        gustosHost,
+        gustosPort,
+        pluginDir=None,
+        logpath=None,
+        useTcp=False,
+        reactor=None,
+        threaded=True,
+        threadPoolSize=10,
+        verbose=False,
+        sender=None,
+        additionalGustos=None,
+    ):
         self._reactor = reactor or SimpleScheduler()
         self._id = id
         self._digest = digest(id)
         self._plugins = {}
-        self._reporter = ThreadedReporter(threadPoolSize=threadPoolSize) if threaded else UnthreadedReporter()
+        self._additionalGustos = [] if additionalGustos is None else additionalGustos
+        self._reporter = (
+            ThreadedReporter(threadPoolSize=threadPoolSize)
+            if threaded
+            else UnthreadedReporter()
+        )
         self._logpath = logpath
         self._verbose = verbose
         if sender is None:
@@ -73,15 +95,32 @@ class Client(object):
             self._initializePlugins(abspath(pluginDir))
 
     def updateSender(self, host, port, useTcp=False):
-        Sender = TcpSender if useTcp else UdpSender
-        self._sender = Sender(host, port)
+        if useTcp:
+            self._sender = TcpSender(host, port)
+            return
+        if not self._additionalGustos:
+            self._sender = UdpSender(host, port)
+            return
+        senders = [UdpSender(host, port)]
+        for h, p in self._additionalGustos:
+            senders.append(UdpSender(h, p))
+        self._sender = MultiSender(senders)
 
     def stop(self):
         self._reporter.stop()
 
     def _initializePlugins(self, pluginDir):
-        plugins = sorted([
-            (name, join(pluginDir, name) + ext) for (name,ext) in [splitext(f) for f in listdir(pluginDir) if isfile(join(pluginDir, f))] if ext == '.py'])
+        plugins = sorted(
+            [
+                (name, join(pluginDir, name) + ext)
+                for (name, ext) in [
+                    splitext(f)
+                    for f in listdir(pluginDir)
+                    if isfile(join(pluginDir, f))
+                ]
+                if ext == ".py"
+            ]
+        )
 
         for name, filePath in plugins:
             try:
@@ -89,8 +128,15 @@ class Client(object):
                 pluginMeterKwargs = module.meter()
             except BaseException:
                 exc_str = format_exc()
-                print2("Error loading PluginModule: '%s' from file: '%s', original exception was:\n\n" % (name, filePath) + exc_str + '\n', file=sys.stderr, flush=True)
-                raise RuntimeError('Plugin loading Failed')
+                print2(
+                    "Error loading PluginModule: '%s' from file: '%s', original exception was:\n\n"
+                    % (name, filePath)
+                    + exc_str
+                    + "\n",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                raise RuntimeError("Plugin loading Failed")
 
             self.addMeter(**pluginMeterKwargs)
 
@@ -98,32 +144,47 @@ class Client(object):
         if pluginName in self._plugins:
             self._plugins[pluginName]._mustReload()
         else:
+
             def load():
-                moduleGlobals = self._createGlobals(pluginName=pluginName, filePath=filePath)
+                moduleGlobals = self._createGlobals(
+                    pluginName=pluginName, filePath=filePath
+                )
                 createdLocals = {}
                 with open(filePath, "rb") as fp:
-                    exec(compile(fp.read(), filePath, 'exec'), moduleGlobals, createdLocals)
+                    exec(
+                        compile(fp.read(), filePath, "exec"),
+                        moduleGlobals,
+                        createdLocals,
+                    )
                 moduleGlobals.update(createdLocals)
                 return moduleGlobals
+
             self._plugins[pluginName] = PluginModule(load)
 
         return self._plugins[pluginName]
 
     def _createGlobals(self, pluginName, filePath):
         result = {}
-        result['__builtins__'] = globals()['__builtins__']
-        result.update({
-            '__name__': None,     # Both None, otherwise relative imports
-            '__package__': None,  # are attempted.
-            '__file__': filePath,
-            '__doc__': """Dynamically imported plugin"""})
+        result["__builtins__"] = globals()["__builtins__"]
+        result.update(
+            {
+                "__name__": None,  # Both None, otherwise relative imports
+                "__package__": None,  # are attempted.
+                "__file__": filePath,
+                "__doc__": """Dynamically imported plugin""",
+            }
+        )
         return result
 
     def addMeter(self, meter, interval=5):
         meter.interval = interval
         targetTime = self._time() + interval
         self._schedule(targetTime, meter)
-        self._log('Added meter {0} with interval {1}; Scheduled at {2}'.format(meter, interval, self._formattedTime(targetTime)))
+        self._log(
+            "Added meter {0} with interval {1}; Scheduled at {2}".format(
+                meter, interval, self._formattedTime(targetTime)
+            )
+        )
 
     def start(self):
         self._reactor.loop()
@@ -133,7 +194,12 @@ class Client(object):
             self._reporter.process(lambda: self._report(meter))
             newTargetTime = targetTime + meter.interval
             self._schedule(newTargetTime, meter)
-            self._log('Scheduled meter {0} at {1}'.format(meter, self._formattedTime(newTargetTime)))
+            self._log(
+                "Scheduled meter {0} at {1}".format(
+                    meter, self._formattedTime(newTargetTime)
+                )
+            )
+
         waitTime = targetTime - self._time()
         if waitTime < 0:
             waitTime = 0
@@ -163,10 +229,10 @@ class Client(object):
             timestamp = int(self._time() * 1000)
         try:
             packet = {
-                'sender': self._id,
-                'digest': self._digest,
-                'data': values,
-                'timestamp': timestamp
+                "sender": self._id,
+                "digest": self._digest,
+                "data": values,
+                "timestamp": timestamp,
             }
             self._sender.send(dumps(packet))
             return packet
@@ -178,11 +244,11 @@ class Client(object):
         meterDirectory = join(self._logpath, meter.__class__.__name__)
         if not isdir(meterDirectory):
             makedirs(meterDirectory)
-        dataFilename = join(meterDirectory, str(packet['timestamp']))
+        dataFilename = join(meterDirectory, str(packet["timestamp"]))
         while isfile(dataFilename):
             dataFilename += "#"
 
-        with open(dataFilename, 'w') as fp:
+        with open(dataFilename, "w") as fp:
             fp.write(dumps(packet))
 
     def _time(self):
@@ -194,5 +260,7 @@ class Client(object):
     def _log(self, message):
         if not self._verbose:
             return
-        sys.stdout.write("{0}: {1}\n".format(self._formattedTime(self._time()), message))
+        sys.stdout.write(
+            "{0}: {1}\n".format(self._formattedTime(self._time()), message)
+        )
         sys.stdout.flush()
