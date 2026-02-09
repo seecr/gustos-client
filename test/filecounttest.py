@@ -26,7 +26,7 @@ from seecr.test import SeecrTestCase
 
 from gustos.client import FileCount
 
-from gustos.common.units import COUNT
+from gustos_common.units import COUNT
 from os.path import join
 from os import makedirs
 

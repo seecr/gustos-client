@@ -24,7 +24,7 @@
 ## end license ##
 
 from unittest import TestCase
-from gustos.common import ParseArguments
+from gustos_common import ParseArguments
 
 class ParseArgumentsTest(TestCase):
     def testMandatoryKey(self):

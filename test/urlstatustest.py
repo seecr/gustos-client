@@ -25,7 +25,7 @@
 from seecr.test import SeecrTestCase
 
 from gustos.client import UrlStatus
-from gustos.common.units import COUNT
+from gustos_common.units import COUNT
 
 from urllib.error import URLError
 from seecr.test.io import stdout_replaced

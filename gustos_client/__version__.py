@@ -2,13 +2,13 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2011-2014, 2018, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
-# "Gustos-Client" is free software; you can redistribute it and/or modify
+# "Gustos-Client" is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # "Gustos-Client" is distributed in the hope that it will be useful,
@@ -17,11 +17,9 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with "Gustos-Client"; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+# along with "Gustos-Client".  If not, see <http://www.gnu.org/licenses/>.
 #
 ## end license ##
 
-from pkgutil import extend_path
-__path__ = extend_path(__path__, __name__)
-
+VERSION = '$Version: 1.1.x$'[9:-1].strip()
+MAJOR_VERSION = '.'.join(VERSION.split('.')[:2])

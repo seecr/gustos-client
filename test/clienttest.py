@@ -40,7 +40,7 @@ except ImportError:
 from gustos.client import Client
 from gustos.client.simplescheduler import SimpleScheduler
 from gustos.client.senders import TcpSender, UdpSender
-from gustos.common.units import EVENT
+from gustos_common.units import EVENT
 
 
 class ClientTest(SeecrTestCase):
@@ -500,8 +500,8 @@ class ClientTest(SeecrTestCase):
                 f.write(content)
 
     def whiteBucket(self):
-        if hasattr(sys.modules["gustos.common"], "_test_whiteboxing"):
-            return sys.modules["gustos.common"]._test_whiteboxing
+        if hasattr(sys.modules["gustos_common"], "_test_whiteboxing"):
+            return sys.modules["gustos_common"]._test_whiteboxing
         return None
 
     def _nextCallback(self, scheduler):
@@ -557,7 +557,7 @@ class Dict(dict):
 
 
 PLUGIN_CONTENT_OK_WHITEBOX = """\
-from gustos.common.units import PERCENTAGE
+from gustos_common.units import PERCENTAGE
 from gustos import common as gustosCommonModuleForTesting
 
 if not hasattr(gustosCommonModuleForTesting, '_test_whiteboxing'):
@@ -585,7 +585,7 @@ _test_whiteboxing.append('import_complete')
 """
 
 PLUGIN2_CONTENT_OK_WHITEBOX = """\
-from gustos.common.units import PERCENTAGE
+from gustos_common.units import PERCENTAGE
 from gustos import common as gustosCommonModuleForTesting
 
 if not hasattr(gustosCommonModuleForTesting, '_test_whiteboxing'):

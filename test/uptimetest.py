@@ -27,7 +27,7 @@ from os.path import join
 
 from gustos.client import Uptime
 
-from gustos.common.units import COUNT
+from gustos_common.units import COUNT
 
 class UptimeTest(SeecrTestCase):
     def testMeter(self):

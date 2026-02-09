@@ -26,7 +26,7 @@ from seecr.test import SeecrTestCase
 from seecr.test.utils import mkdir
 
 from gustos.client import CpuUsageLxc
-from gustos.common.units import PERCENTAGE
+from gustos_common.units import PERCENTAGE
 from os.path import join
 from os import listdir
 from shutil import rmtree

@@ -29,7 +29,7 @@ from time import time, strftime, localtime
 from traceback import print_exc, format_exc
 from json import dumps
 
-from gustos.common import digest, print2
+from gustos_common import digest, print2
 from .senders import UdpSender, TcpSender, MultiSender
 from .reporter import ThreadedReporter, UnthreadedReporter
 from .simplescheduler import SimpleScheduler

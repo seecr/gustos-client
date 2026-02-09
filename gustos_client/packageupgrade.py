@@ -23,7 +23,7 @@
 ## end license ##
 
 from traceback import print_exc
-from gustos.common.units import COUNT
+from gustos_common.units import COUNT
 from os.path import isfile
 from subprocess import Popen, PIPE
 
