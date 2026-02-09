@@ -27,7 +27,7 @@ from os import makedirs, listdir
 from os.path import join, isdir, isfile, abspath, splitext
 from time import time, strftime, localtime
 from traceback import print_exc, format_exc
-from simplejson import dumps
+from json import dumps
 
 from gustos.common import digest, print2
 from .senders import UdpSender, TcpSender, MultiSender

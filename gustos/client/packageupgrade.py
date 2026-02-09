@@ -27,12 +27,7 @@ from gustos.common.units import COUNT
 from os.path import isfile
 from subprocess import Popen, PIPE
 
-try:
-    # Python 3.13+
-    from looseversion import LooseVersion
-except ImportError:
-    # Pre python 3.13
-    from distutils.version import LooseVersion
+from looseversion import LooseVersion
 import sys
 
 

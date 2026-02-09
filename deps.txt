@@ -1,8 +1,6 @@
-python3-simplejson
 python3-cryptography
-python3-gustos2.3-common
+python3-gustos-common
 python3-psutil
 python3-netaddr
-python3-simplejson
-#debian-trixie:python3-looseversion
-#debian:python3-apt
+python3-looseversion
+python3-apt
