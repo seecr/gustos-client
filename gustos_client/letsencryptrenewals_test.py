@@ -2,13 +2,13 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2019, 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2019, 2021-2022, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
-# "Gustos-Client" is free software; you can redistribute it and/or modify
+# "Gustos-Client" is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # "Gustos-Client" is distributed in the hope that it will be useful,
@@ -17,8 +17,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with "Gustos-Client"; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+# along with "Gustos-Client".  If not, see <http://www.gnu.org/licenses/>.
 #
 ## end license ##
 
@@ -61,18 +60,6 @@ class LetsEncryptRenewalsTest(SeecrTestCase):
         ler = LetsEncryptRenewals(renewalsDir=self.tempdir)
         self.assertEqual(
             [{"hostname": "example.com", "pem": "/path/to/certificate/file.pem"}],
-            list(ler.findInfo()),
-        )
-
-    def testFindInfo(self):
-        ler = LetsEncryptRenewals(renewalsDir=str(dataPath))
-        self.assertEqual(
-            [
-                {
-                    "hostname": "example.com",
-                    "pem": "/etc/letsencrypt/live/example_com-cert/cert.pem",
-                }
-            ],
             list(ler.findInfo()),
         )
 
@@ -173,3 +160,36 @@ def create_cert(daysValid):
     )
 
     return cert.public_bytes(serialization.Encoding.PEM)
+
+
+def test_find_info(tmp_path):
+    data_path = tmp_path / "data"
+    data_path.mkdir()
+    data_path.joinpath("example_com-cert.conf").write_text(
+        """
+# renew_before_expiry = 30 days
+version = 0.31.0
+archive_dir = /etc/letsencrypt/archive/example_com-cert
+cert = /etc/letsencrypt/live/example_com-cert/cert.pem
+privkey = /etc/letsencrypt/live/example_com-cert/privkey.pem
+chain = /etc/letsencrypt/live/example_com-cert/chain.pem
+fullchain = /etc/letsencrypt/live/example_com-cert/fullchain.pem
+
+# Options used in the renewal process
+[renewalparams]
+account = account_number
+authenticator = webroot
+server = https://letsencrypt.example.org/directory
+renew_hook = /usr/bin/restart-script
+[[webroot_map]]
+example.com = /var/www/html
+sub.example.com = /var/www/html
+"""
+    )
+    ler = LetsEncryptRenewals(renewalsDir=str(data_path))
+    assert list(ler.findInfo()) == [
+        {
+            "hostname": "example.com",
+            "pem": "/etc/letsencrypt/live/example_com-cert/cert.pem",
+        }
+    ]
