@@ -41,6 +41,54 @@ from gustos_client.simplescheduler import SimpleScheduler
 from gustos_client.senders import TcpSender, UdpSender
 from gustos_common.units import EVENT
 
+import pytest
+from collections import namedtuple
+
+
+@pytest.fixture
+def gustos_client(tmp_path):
+    plugin_path = tmp_path / "plugins.d"
+    plugin_path.mkdir()
+    mock_clock = MockClock()
+    socket = MockSocket()
+    client = Client(
+        id="aServer",
+        gustosHost="HOST",
+        gustosPort="PORT",
+        pluginDir=plugin_path.as_posix(),
+        logpath=tmp_path.as_posix(),
+        threaded=False,
+        sender=UdpSender(host="HOST", port="PORT", sok=socket),
+    )
+    scheduler = client._reactor
+    client._time = scheduler._time = mock_clock.time
+    sleeper = CallTrace("sleeper", methods={"sleep": mock_clock.sleep})
+    scheduler._sleep = sleeper.sleep
+
+    class MyMeter(CallTrace):
+        pass
+
+    meter = MyMeter(
+        "some meter",
+        returnValues=dict(
+            values={"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}
+        ),
+    )
+    return namedtuple(
+        "GustosClient",
+        ["client", "scheduler", "mock_clock", "socket", "meter", "sleeper"],
+    )(client, scheduler, mock_clock, socket, meter, sleeper)
+
+
+def test_sent_large_packet(gustos_client):
+    v = {"group": {f"label{i}": {"serie": {"quantity": 42}} for i in range(100)}}
+    assert len(json.dumps(v)) == 4001
+    packet = gustos_client.client.report(v)
+    assert gustos_client.socket.calledMethodNames() == ["sendto", "close"]
+    data = gustos_client.socket.calledMethods[0].args[0]
+    assert 300 < len(data) < 400, len(data)
+    assert json.loads(zlib.decompress(data))["data"] == v
+
 
 class ClientTest(SeecrTestCase):
     def setUp(self):
@@ -90,15 +138,6 @@ class ClientTest(SeecrTestCase):
             json.loads(self.socket.calledMethods[0].args[0]),
         )
         self.assertEqual(("HOST", "PORT"), self.socket.calledMethods[0].args[1])
-
-    def testSentLargePacket(self):
-        v = {"group": {f"label{i}": {"serie": {"quantity": 42}} for i in range(100)}}
-        self.assertEqual(4001, len(json.dumps(v)))
-        packet = self.client.report(v)
-        self.assertEqual(["sendto", "close"], self.socket.calledMethodNames())
-        data = self.socket.calledMethods[0].args[0]
-        self.assertTrue(300 < len(data) < 400, len(data))
-        self.assertEqual(v, json.loads(zlib.decompress(data))["data"])
 
     def testSentMultiplePackets(self):
         meter = CallTrace(
@@ -557,7 +596,7 @@ class Dict(dict):
 
 PLUGIN_CONTENT_OK_WHITEBOX = """\
 from gustos_common.units import PERCENTAGE
-from gustos import common as gustosCommonModuleForTesting
+import gustos_common as gustosCommonModuleForTesting
 
 if not hasattr(gustosCommonModuleForTesting, '_test_whiteboxing'):
     gustosCommonModuleForTesting._test_whiteboxing = []
@@ -585,7 +624,7 @@ _test_whiteboxing.append('import_complete')
 
 PLUGIN2_CONTENT_OK_WHITEBOX = """\
 from gustos_common.units import PERCENTAGE
-from gustos import common as gustosCommonModuleForTesting
+import gustos_common as gustosCommonModuleForTesting
 
 if not hasattr(gustosCommonModuleForTesting, '_test_whiteboxing'):
     gustosCommonModuleForTesting._test_whiteboxing = []
@@ -612,7 +651,7 @@ _test_whiteboxing.append('import_complete plugin2')
 """
 
 PLUGIN_CONTENT_NO_METER_WHITEBOX = """\
-from gustos import common as gustosCommonModuleForTesting
+import gustos_common as gustosCommonModuleForTesting
 
 if not hasattr(gustosCommonModuleForTesting, '_test_whiteboxing'):
     gustosCommonModuleForTesting._test_whiteboxing = []
@@ -623,7 +662,7 @@ _test_whiteboxing.append('import_complete')
 """
 
 PLUGIN_CONTENT_WITH_ERROR_WHITEBOX = """\
-from gustos import common as gustosCommonModuleForTesting
+import gustos_common as gustosCommonModuleForTesting
 
 if not hasattr(gustosCommonModuleForTesting, '_test_whiteboxing'):
     gustosCommonModuleForTesting._test_whiteboxing = []
