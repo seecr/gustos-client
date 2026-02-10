@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gustos-client"
+authors = [
+    {name = "Thijs Janssen", email = "thijs@seecr.nl"},
+    {name = "Johan Jonkers", email = "johan@seecr.nl"},
+]
+description = "Gustos monitoring tool client."
+requires-python = ">=3.13"
+license = {file = "COPYING"}
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Programming Language :: Python :: 3",
+]
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+version_file = "gustos_client/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.isort]
+profile = "black"
+
+[seecr.pytools]
+system-packages = true
+
+[seecr]
+build-tool = "seecr-packages-make"
