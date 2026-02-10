@@ -1,6 +1,7 @@
 ## begin license ##
 #
-# "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
+# "Gustos" is a monitoring tool by Seecr.
+# This client side code for connecting with Gustos server.
 #
 # Copyright (C) 2012-2015, 2018-2019, 2022-2023, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
