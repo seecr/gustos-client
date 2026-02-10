@@ -21,6 +21,7 @@
 # along with "Gustos-Client".  If not, see <http://www.gnu.org/licenses/>.
 #
 ## end license ##
+# flake8: noqa E501
 
 from gustos_client import Bandwidth
 from gustos_common.units import COUNT
