@@ -25,7 +25,7 @@
 from seecr.test import SeecrTestCase
 from os.path import join
 
-from gustos.client import Uptime
+from gustos_client import Uptime
 
 from gustos_common.units import COUNT
 

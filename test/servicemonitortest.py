@@ -23,7 +23,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from gustos.client.servicemonitor import ServiceMonitor
+from gustos_client.servicemonitor import ServiceMonitor
 from gustos_common.units import PERCENTAGE, MEMORY
 from os import makedirs, symlink
 from os.path import join

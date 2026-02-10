@@ -24,7 +24,7 @@
 
 from seecr.test import SeecrTestCase
 
-from gustos.client.reporter import ThreadedReporter
+from gustos_client.reporter import ThreadedReporter
 from threading import active_count
 from time import sleep
 

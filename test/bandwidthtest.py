@@ -25,7 +25,7 @@
 from seecr.test import SeecrTestCase
 from seecr.test.utils import mkdir
 
-from gustos.client import Bandwidth
+from gustos_client import Bandwidth
 from gustos_common.units import COUNT
 from os.path import join
 

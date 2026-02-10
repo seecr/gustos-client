@@ -24,7 +24,7 @@
 
 from seecr.test import SeecrTestCase
 
-from gustos.client import NeedRestart
+from gustos_client import NeedRestart
 from gustos_common.units import COUNT
 
 from psutil import NoSuchProcess

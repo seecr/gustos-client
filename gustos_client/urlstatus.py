@@ -23,7 +23,7 @@
 
 from urllib.request import urlopen, Request
 from gustos_common.units import COUNT
-from gustos.client import VERSION
+from gustos_client import VERSION
 
 class UrlStatus(object):
     def __init__(self, url, label="", group="Url Status", timeout=1):

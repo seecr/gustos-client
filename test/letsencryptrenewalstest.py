@@ -29,7 +29,7 @@ from os.path import join
 from datetime import datetime, timedelta, timezone
 import pathlib, json
 
-from gustos.client import LetsEncryptRenewals, SSLCertificateCheck
+from gustos_client import LetsEncryptRenewals, SSLCertificateCheck
 
 dataPath = pathlib.Path(__file__).parent / "data"
 

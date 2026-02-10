@@ -24,7 +24,7 @@
 
 from seecr.test import SeecrTestCase
 
-from gustos.client import Diskspace
+from gustos_client import Diskspace
 
 from gustos_common.units import MEMORY
 

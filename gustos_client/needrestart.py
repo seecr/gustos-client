@@ -22,7 +22,7 @@
 ## end license ##
 
 from gustos_common.units import COUNT
-from gustos.client import VERSION
+from gustos_client import VERSION
 from subprocess import Popen, PIPE
 
 import psutil

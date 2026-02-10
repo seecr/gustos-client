@@ -25,7 +25,7 @@
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.io import stderr_replaced
 
-from gustos.client.threadpool import ThreadPool
+from gustos_client.threadpool import ThreadPool
 from time import sleep
 from threading import active_count
 

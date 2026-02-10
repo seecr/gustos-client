@@ -37,9 +37,9 @@ try:
 except ImportError:
     Reactor = None
 
-from gustos.client import Client
-from gustos.client.simplescheduler import SimpleScheduler
-from gustos.client.senders import TcpSender, UdpSender
+from gustos_client import Client
+from gustos_client.simplescheduler import SimpleScheduler
+from gustos_client.senders import TcpSender, UdpSender
 from gustos_common.units import EVENT
 
 

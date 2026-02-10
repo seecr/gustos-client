@@ -29,7 +29,7 @@ from time import time, strftime, localtime
 from traceback import print_exc, format_exc
 from json import dumps
 
-from gustos_common import digest, print2
+from gustos_common import digest
 from .senders import UdpSender, TcpSender, MultiSender
 from .reporter import ThreadedReporter, UnthreadedReporter
 from .simplescheduler import SimpleScheduler
@@ -128,9 +128,8 @@ class Client(object):
                 pluginMeterKwargs = module.meter()
             except BaseException:
                 exc_str = format_exc()
-                print2(
-                    "Error loading PluginModule: '%s' from file: '%s', original exception was:\n\n"
-                    % (name, filePath)
+                print(
+                    f"Error loading PluginModule: {name!r} from file: {filePath!r}, original exception was:\n\n"
                     + exc_str
                     + "\n",
                     file=sys.stderr,

@@ -24,7 +24,7 @@
 
 from seecr.test import SeecrTestCase
 
-from gustos.client import SendData
+from gustos_client import SendData
 
 
 class SendDataTest(SeecrTestCase):

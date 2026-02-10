@@ -23,7 +23,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from gustos.client.simplescheduler import SimpleScheduler
+from gustos_client.simplescheduler import SimpleScheduler
 
 class SimpleSchedulerTest(SeecrTestCase):
 

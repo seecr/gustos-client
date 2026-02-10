@@ -24,7 +24,7 @@
 
 from seecr.test import SeecrTestCase
 
-from gustos.client import CpuUsage
+from gustos_client import CpuUsage
 from gustos_common.units import PERCENTAGE
 
 class CpuUsageTest(SeecrTestCase):

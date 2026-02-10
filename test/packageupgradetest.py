@@ -1,7 +1,7 @@
 from seecr.test import SeecrTestCase
 
-from gustos.client import PackageUpgrade
-from gustos.client.packageupgrade import DebianPackages
+from gustos_client import PackageUpgrade
+from gustos_client.packageupgrade import DebianPackages
 
 class Dict(dict):
     def __getattribute__(self, key):

@@ -24,7 +24,7 @@
 
 from seecr.test import SeecrTestCase
 
-from gustos.client import LxcUptime
+from gustos_client import LxcUptime
 from gustos_common.units import COUNT
 
 class LxcUptimeTest(SeecrTestCase):
