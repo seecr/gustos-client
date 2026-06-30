@@ -91,7 +91,7 @@ class Client(object):
         else:
             self._sender = sender
 
-        if not pluginDir is None:
+        if pluginDir is not None:
             self._initializePlugins(abspath(pluginDir))
 
     def updateSender(self, host, port, useTcp=False):
@@ -129,7 +129,8 @@ class Client(object):
             except BaseException:
                 exc_str = format_exc()
                 print(
-                    f"Error loading PluginModule: {name!r} from file: {filePath!r}, original exception was:\n\n"
+                    f"Error loading PluginModule: {name!r} from file: {filePath!r}, "
+                    + "original exception was:\n\n"
                     + exc_str
                     + "\n",
                     file=sys.stderr,
@@ -175,9 +176,10 @@ class Client(object):
         )
         return result
 
-    def addMeter(self, meter, interval=5):
+    def addMeter(self, meter, interval=5, initialDelay=None):
         meter.interval = interval
-        targetTime = self._time() + interval
+        initialDelay = interval if initialDelay is None else initialDelay
+        targetTime = self._time() + initialDelay
         self._schedule(targetTime, meter)
         self._log(
             "Added meter {0} with interval {1}; Scheduled at {2}".format(

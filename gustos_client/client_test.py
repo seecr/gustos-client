@@ -214,15 +214,15 @@ class ClientTest(SeecrTestCase):
         )
 
     def testClientPacketLogging(self):
-        self.client.addMeter(self.meter, interval=5)
+        self.client.addMeter(self.meter, interval=5, initialDelay=1)
         self.assertFalse(isdir(join(self.tempdir, "MyMeter")))
         self.scheduler.step()
         self.assertTrue(isdir(join(self.tempdir, "MyMeter")))
-        self.assertEqual(["7000"], listdir(join(self.tempdir, "MyMeter")))
+        self.assertEqual(["4000"], listdir(join(self.tempdir, "MyMeter")))
         self.scheduler.step()
         self.scheduler.step()
         self.assertEqual(
-            set(["7000", "12000", "17000"]), set(listdir(join(self.tempdir, "MyMeter")))
+            set(["4000", "8000", "13000"]), set(listdir(join(self.tempdir, "MyMeter")))
         )
 
     def testShouldAbspathOrNonePluginDir(self):
@@ -459,7 +459,7 @@ class ClientTest(SeecrTestCase):
         self.assertTrue(0.36 < deltaT < 0.38, deltaT)
 
     def testSchedulingDoesntExceedRecursionDepth(self):
-        self.client.addMeter(self.meter, interval=0.1)
+        self.client.addMeter(self.meter, interval=0.1, initialDelay=0.1)
         numberOfReports = sys.getrecursionlimit() + 1
         for i in range(numberOfReports):
             self.scheduler.step()
