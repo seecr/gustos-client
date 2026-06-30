@@ -23,6 +23,7 @@
 ## end license ##
 
 import sys
+
 from os import makedirs, listdir
 from os.path import join, isdir, isfile, abspath, splitext
 from time import time, strftime, localtime
@@ -35,6 +36,9 @@ from .reporter import ThreadedReporter, UnthreadedReporter
 from .simplescheduler import SimpleScheduler
 
 from .debug import listen  # DO_NOT_DISTRIBUTE
+from .reporter import ThreadedReporter, UnthreadedReporter
+from .senders import MultiSender, TcpSender, UdpSender
+from .simplescheduler import SimpleScheduler
 
 listen()  # DO_NOT_DISTRIBUTE
 
@@ -176,9 +180,10 @@ class Client(object):
         )
         return result
 
-    def addMeter(self, meter, interval=5):
+    def addMeter(self, meter, interval=5, initial_delay=None):
         meter.interval = interval
-        targetTime = self._time() + interval
+        initial_delay = interval if initial_delay is None else initial_delay
+        targetTime = self._time() + initial_delay
         self._schedule(targetTime, meter)
         self._log(
             "Added meter {0} with interval {1}; Scheduled at {2}".format(
@@ -207,6 +212,18 @@ class Client(object):
 
     def _report(self, meter):
         self._log("Processing meter {0}".format(meter))
+
+        if hasattr(meter, "info") and callable(meter.info):
+            info_data = None
+            try:
+                info_data = meter.info()
+            except Exception:
+                print_exc()
+                sys.stderr.flush()
+            if info_data is not None:
+                self.report(values={}, info=info_data)
+                return
+
         meterValues = None
         try:
             meterValues = meter.values()
@@ -224,7 +241,7 @@ class Client(object):
             if self._logpath:
                 self._logData(meter, packet)
 
-    def report(self, values, timestamp=None):
+    def report(self, values, info=None, timestamp=None):
         if timestamp is None:
             timestamp = int(self._time() * 1000)
         try:
@@ -234,6 +251,8 @@ class Client(object):
                 "data": values,
                 "timestamp": timestamp,
             }
+            if info is not None:
+                packet["info"] = info
             self._sender.send(dumps(packet))
             return packet
         except Exception:
