@@ -69,6 +69,11 @@ def gustos_client(tmp_path):
     class MyMeter(CallTrace):
         pass
 
+    def next_callback():
+        return scheduler._schedule.queue[0][1]
+
+    scheduler.next_callback = next_callback
+
     meter = MyMeter(
         "some meter",
         returnValues=dict(
@@ -89,6 +94,20 @@ def test_sent_large_packet(gustos_client):
     data = gustos_client.socket.calledMethods[0].args[0]
     assert 300 < len(data) < 400, len(data)
     assert json.loads(zlib.decompress(data))["data"] == v
+
+
+def test_scheduling(gustos_client):
+    gustos_client.client.addMeter(gustos_client.meter, interval=5)
+    assert gustos_client.scheduler._schedule.queue == [
+        (6, gustos_client.scheduler.next_callback())
+    ]
+    gustos_client.scheduler.step()
+    assert gustos_client.sleeper.calledMethodNames() == ["sleep"]
+    assert gustos_client.sleeper.calledMethods[0].args[0] == 3
+    assert gustos_client.meter.calledMethodNames() == ["info", "values"]
+    assert gustos_client.scheduler._schedule.queue == [
+        (11, gustos_client.scheduler.next_callback())
+    ]
 
 
 class ClientTest(SeecrTestCase):
@@ -177,19 +196,6 @@ class ClientTest(SeecrTestCase):
         self.client._report(meter)
         self.assertEqual([], self.socket.calledMethodNames())
 
-    def testScheduling(self):
-        self.client.addMeter(self.meter, interval=5)
-        self.assertEqual(
-            [(6, self._nextCallback(self.scheduler))], self.scheduler._schedule.queue
-        )
-        self.scheduler.step()
-        self.assertEqual(["sleep"], self.sleeper.calledMethodNames())
-        self.assertEqual(3, self.sleeper.calledMethods[0].args[0])
-        self.assertEqual(["values"], self.meter.calledMethodNames())
-        self.assertEqual(
-            [(11, self._nextCallback(self.scheduler))], self.scheduler._schedule.queue
-        )
-
     def testExceptionHandling(self):
         self.meter.exceptions["values"] = Exception("Something bad happened")
         self.client.addMeter(self.meter, interval=5)
@@ -214,7 +220,7 @@ class ClientTest(SeecrTestCase):
         )
 
     def testClientPacketLogging(self):
-        self.client.addMeter(self.meter, interval=5, initialDelay=1)
+        self.client.addMeter(self.meter, interval=5, initial_delay=1)
         self.assertFalse(isdir(join(self.tempdir, "MyMeter")))
         self.scheduler.step()
         self.assertTrue(isdir(join(self.tempdir, "MyMeter")))
@@ -459,7 +465,7 @@ class ClientTest(SeecrTestCase):
         self.assertTrue(0.36 < deltaT < 0.38, deltaT)
 
     def testSchedulingDoesntExceedRecursionDepth(self):
-        self.client.addMeter(self.meter, interval=0.1, initialDelay=0.1)
+        self.client.addMeter(self.meter, interval=0.1)
         numberOfReports = sys.getrecursionlimit() + 1
         for i in range(numberOfReports):
             self.scheduler.step()

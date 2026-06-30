@@ -23,18 +23,18 @@
 ## end license ##
 
 import sys
-from os import makedirs, listdir
-from os.path import join, isdir, isfile, abspath, splitext
-from time import time, strftime, localtime
-from traceback import print_exc, format_exc
 from json import dumps
+from os import listdir, makedirs
+from os.path import abspath, isdir, isfile, join, splitext
+from time import localtime, strftime, time
+from traceback import format_exc, print_exc
 
 from gustos_common import digest
-from .senders import UdpSender, TcpSender, MultiSender
-from .reporter import ThreadedReporter, UnthreadedReporter
-from .simplescheduler import SimpleScheduler
 
 from .debug import listen  # DO_NOT_DISTRIBUTE
+from .reporter import ThreadedReporter, UnthreadedReporter
+from .senders import MultiSender, TcpSender, UdpSender
+from .simplescheduler import SimpleScheduler
 
 listen()  # DO_NOT_DISTRIBUTE
 
@@ -176,10 +176,10 @@ class Client(object):
         )
         return result
 
-    def addMeter(self, meter, interval=5, initialDelay=None):
+    def addMeter(self, meter, interval=5, initial_delay=None):
         meter.interval = interval
-        initialDelay = interval if initialDelay is None else initialDelay
-        targetTime = self._time() + initialDelay
+        initial_delay = interval if initial_delay is None else initial_delay
+        targetTime = self._time() + initial_delay
         self._schedule(targetTime, meter)
         self._log(
             "Added meter {0} with interval {1}; Scheduled at {2}".format(
@@ -208,6 +208,18 @@ class Client(object):
 
     def _report(self, meter):
         self._log("Processing meter {0}".format(meter))
+
+        if hasattr(meter, "info") and callable(meter.info):
+            info_data = None
+            try:
+                info_data = meter.info()
+            except Exception:
+                print_exc()
+                sys.stderr.flush()
+            if info_data is not None:
+                self.report(values={}, info=info_data)
+                return
+
         meterValues = None
         try:
             meterValues = meter.values()
@@ -225,7 +237,7 @@ class Client(object):
             if self._logpath:
                 self._logData(meter, packet)
 
-    def report(self, values, timestamp=None):
+    def report(self, values, info=None, timestamp=None):
         if timestamp is None:
             timestamp = int(self._time() * 1000)
         try:
@@ -235,6 +247,8 @@ class Client(object):
                 "data": values,
                 "timestamp": timestamp,
             }
+            if info is not None:
+                packet["info"] = info
             self._sender.send(dumps(packet))
             return packet
         except Exception:
