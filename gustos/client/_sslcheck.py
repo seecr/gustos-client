@@ -58,7 +58,7 @@ class _SSLCheck(object):
         conn = ssl.create_connection((hostname, 443))
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         sock = context.wrap_socket(conn, server_hostname=hostname)
-        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True))
+        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True)).encode("utf-8")
 
     def listDaysLeft(self):
         return [dict(info, **self.daysLeftOnPEM(**info)) for info in self.findInfo()]
