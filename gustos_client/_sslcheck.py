@@ -29,6 +29,7 @@ from cryptography import x509
 
 from os.path import isfile
 import ssl
+import pathlib
 
 
 class _SSLCheck(object):
@@ -37,30 +38,6 @@ class _SSLCheck(object):
 
     def findInfo(self):
         raise NotImplementedError()
-
-    def daysLeftOnPEM(self, pem, hostname):
-        def daysLeft(cert):
-            return (
-                cert.not_valid_after_utc.date() - datetime.now(tz=timezone.utc).date()
-            ).days
-
-        result = dict()
-        _dl = lambda cert: daysLeft(x509.load_pem_x509_certificate(cert))
-        if pem and isfile(pem):
-            with open(pem) as fp:
-                result["daysLeftFile"] = _dl(fp.read().encode(encoding="utf-8"))
-        try:
-            result["daysLeftServer"] = _dl(self._get_server_certificate(hostname))
-        except:
-            raise
-            pass
-        return result
-
-    def _get_server_certificate(self, hostname):
-        conn = ssl.create_connection((hostname, 443))
-        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        sock = context.wrap_socket(conn, server_hostname=hostname)
-        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True))
 
     def listDaysLeft(self):
         return [dict(info, **self.daysLeftOnPEM(**info)) for info in self.findInfo()]
@@ -78,3 +55,36 @@ class _SSLCheck(object):
                     continue
                 result[self._group].setdefault(label, {})[key] = {COUNT: value}
         return result
+
+    def _days_left_certificate(self, data, now=None):
+        if data is None:
+            return None
+        cert = x509.load_pem_x509_certificate(data)
+        now = now or datetime.now(tz=timezone.utc)
+        return (cert.not_valid_after_utc - now).days
+
+    def _certificate_file(self, pem):
+        if not pem:
+            return None
+        fp = pathlib.Path(pem)
+        if not fp.is_file():
+            return None
+        return fp.read_bytes()
+
+    def daysLeftOnPEM(self, pem, hostname, **_):
+        return {
+            "pem": pem,
+            "hostname": hostname,
+            "daysLeftFile": self._days_left_certificate(self._certificate_file(pem)),
+            "daysLeftServer": self._days_left_certificate(
+                self._get_server_certificate(hostname)
+            ),
+        }
+
+    def _get_server_certificate(self, hostname):
+        if not hostname:
+            return None
+        conn = ssl.create_connection((hostname, 443))
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        sock = context.wrap_socket(conn, server_hostname=hostname)
+        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True)).encode("utf-8")

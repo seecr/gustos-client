@@ -156,7 +156,7 @@ def create_cert(daysValid):
         .public_key(private_key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(now)
-        .not_valid_after(now + timedelta(days=daysValid))
+        .not_valid_after(now + timedelta(days=daysValid, hours=5))
         .sign(private_key, hashes.SHA256())
     )
 
