@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2012-2014, 2018, 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2012-2014, 2018, 2021-2022, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -47,7 +47,7 @@ from gustos.common.units import EVENT
 class ClientTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.pluginDir = join(self.tempdir, 'plugins.d')
+        self.pluginDir = join(self.tempdir, "plugins.d")
         makedirs(self.pluginDir)
         self.mockClock = MockClock()
         self.socket = MockSocket()
@@ -58,15 +58,22 @@ class ClientTest(SeecrTestCase):
             pluginDir=self.pluginDir,
             logpath=self.tempdir,
             threaded=False,
-            sender=UdpSender(host="HOST", port="PORT", sok=self.socket))
+            sender=UdpSender(host="HOST", port="PORT", sok=self.socket),
+        )
         self.scheduler = self.client._reactor
         self.client._time = self.scheduler._time = self.mockClock.time
-        self.sleeper = CallTrace('sleeper', methods={'sleep': self.mockClock.sleep})
+        self.sleeper = CallTrace("sleeper", methods={"sleep": self.mockClock.sleep})
         self.scheduler._sleep = self.sleeper.sleep
 
         class MyMeter(CallTrace):
             pass
-        self.meter = MyMeter('some meter', returnValues=dict(values={'group': {'chartLabel': {'serieLabel': {'quantity': 42}}}}))
+
+        self.meter = MyMeter(
+            "some meter",
+            returnValues=dict(
+                values={"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}
+            ),
+        )
 
     def tearDown(self):
         whiteBucket = self.whiteBucket()
@@ -77,63 +84,81 @@ class ClientTest(SeecrTestCase):
     def testSentPacket(self):
         self.mockClock.step()
         self.client._report(self.meter)
-        self.assertEqual(['sendto', 'close'], self.socket.calledMethodNames())
-        self.assertEqual(loads('{"data": {"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 1000}'), loads(self.socket.calledMethods[0].args[0]))
-        self.assertEqual(('HOST', 'PORT'), self.socket.calledMethods[0].args[1])
+        self.assertEqual(["sendto", "close"], self.socket.calledMethodNames())
+        self.assertEqual(
+            loads(
+                '{"data": {"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 1000}'
+            ),
+            loads(self.socket.calledMethods[0].args[0]),
+        )
+        self.assertEqual(("HOST", "PORT"), self.socket.calledMethods[0].args[1])
 
     def testSentLargePacket(self):
-        v = {'group': {f'label{i}': {'serie': {'quantity': 42}} for i in range(100)}}
+        v = {"group": {f"label{i}": {"serie": {"quantity": 42}} for i in range(100)}}
         self.assertEqual(4001, len(json.dumps(v)))
         packet = self.client.report(v)
-        self.assertEqual(['sendto', 'close'], self.socket.calledMethodNames())
+        self.assertEqual(["sendto", "close"], self.socket.calledMethodNames())
         data = self.socket.calledMethods[0].args[0]
         self.assertTrue(300 < len(data) < 400, len(data))
-        self.assertEqual(v, json.loads(zlib.decompress(data))['data'])
-
-
+        self.assertEqual(v, json.loads(zlib.decompress(data))["data"])
 
     def testSentMultiplePackets(self):
-        meter = CallTrace('some meter', returnValues=dict(values=[
-                    {'group': {'chartLabel': {'serieLabel': {'quantity': 42}}}},
-                    {'othergroup': {'chartLabel': {'serieLabel': {'quantity': 43}}}}
+        meter = CallTrace(
+            "some meter",
+            returnValues=dict(
+                values=[
+                    {"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}},
+                    {"othergroup": {"chartLabel": {"serieLabel": {"quantity": 43}}}},
                 ]
-            ))
+            ),
+        )
         self.mockClock.step()
         self.client._report(meter)
-        self.assertEqual(['sendto', 'close', 'sendto', 'close'], self.socket.calledMethodNames())
-        self.assertEqual(loads('{"data": {"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 1000}'), loads(self.socket.calledMethods[0].args[0]))
-        self.assertEqual(('HOST', 'PORT'), self.socket.calledMethods[0].args[1])
+        self.assertEqual(
+            ["sendto", "close", "sendto", "close"], self.socket.calledMethodNames()
+        )
+        self.assertEqual(
+            loads(
+                '{"data": {"group": {"chartLabel": {"serieLabel": {"quantity": 42}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 1000}'
+            ),
+            loads(self.socket.calledMethods[0].args[0]),
+        )
+        self.assertEqual(("HOST", "PORT"), self.socket.calledMethods[0].args[1])
 
-        self.assertEqual(loads('{"data": {"othergroup": {"chartLabel": {"serieLabel": {"quantity": 43}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 2000}'), loads(self.socket.calledMethods[2].args[0]))
-        self.assertEqual(('HOST', 'PORT'), self.socket.calledMethods[2].args[1])
-
+        self.assertEqual(
+            loads(
+                '{"data": {"othergroup": {"chartLabel": {"serieLabel": {"quantity": 43}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d", "timestamp": 2000}'
+            ),
+            loads(self.socket.calledMethods[2].args[0]),
+        )
+        self.assertEqual(("HOST", "PORT"), self.socket.calledMethods[2].args[1])
 
     def testDontReportEmptyValues(self):
         self.mockClock.step()
-        meter = CallTrace(returnValues={'values': None})
+        meter = CallTrace(returnValues={"values": None})
         self.client._report(meter)
         self.assertEqual([], self.socket.calledMethodNames())
 
     def testScheduling(self):
         self.client.addMeter(self.meter, interval=5)
         self.assertEqual(
-            [(6, self._nextCallback(self.scheduler))],
-             self.scheduler._schedule.queue)
+            [(6, self._nextCallback(self.scheduler))], self.scheduler._schedule.queue
+        )
         self.scheduler.step()
-        self.assertEqual(['sleep'], self.sleeper.calledMethodNames())
+        self.assertEqual(["sleep"], self.sleeper.calledMethodNames())
         self.assertEqual(3, self.sleeper.calledMethods[0].args[0])
-        self.assertEqual(['values'], self.meter.calledMethodNames())
+        self.assertEqual(["info", "values"], self.meter.calledMethodNames())
         self.assertEqual(
-            [(11, self._nextCallback(self.scheduler))],
-            self.scheduler._schedule.queue)
+            [(11, self._nextCallback(self.scheduler))], self.scheduler._schedule.queue
+        )
 
     def testExceptionHandling(self):
-        self.meter.exceptions['values'] = Exception("Something bad happened")
+        self.meter.exceptions["values"] = Exception("Something bad happened")
         self.client.addMeter(self.meter, interval=5)
-        self.assertEqual(['plugins.d'], listdir(self.tempdir))
+        self.assertEqual(["plugins.d"], listdir(self.tempdir))
         self.assertEqual(
-            [(6, self._nextCallback(self.scheduler))],
-            self.scheduler._schedule.queue)
+            [(6, self._nextCallback(self.scheduler))], self.scheduler._schedule.queue
+        )
 
         strm = StringIO()
         try:
@@ -142,103 +167,128 @@ class ClientTest(SeecrTestCase):
         finally:
             sys.stderr = sys.__stderr__
 
-        self.assertEqual(['plugins.d'], listdir(self.tempdir))
-        lines = strm.getvalue().split('\n')
-        self.assertEqual('Traceback (most recent call last):', lines[0])
-        self.assertEqual('Exception: Something bad happened', lines[-2])
+        self.assertEqual(["plugins.d"], listdir(self.tempdir))
+        lines = strm.getvalue().split("\n")
+        self.assertEqual("Traceback (most recent call last):", lines[0])
+        self.assertEqual("Exception: Something bad happened", lines[-2])
         self.assertEqual(
-            [(11, self._nextCallback(self.scheduler))],
-            self.scheduler._schedule.queue)
+            [(11, self._nextCallback(self.scheduler))], self.scheduler._schedule.queue
+        )
 
     def testClientPacketLogging(self):
         self.client.addMeter(self.meter, interval=5)
-        self.assertFalse(isdir(join(self.tempdir, 'MyMeter')))
+        self.assertFalse(isdir(join(self.tempdir, "MyMeter")))
         self.scheduler.step()
-        self.assertTrue(isdir(join(self.tempdir, 'MyMeter')))
-        self.assertEqual(['7000'], listdir(join(self.tempdir, 'MyMeter')))
+        self.assertTrue(isdir(join(self.tempdir, "MyMeter")))
+        self.assertEqual(["7000"], listdir(join(self.tempdir, "MyMeter")))
         self.scheduler.step()
         self.scheduler.step()
-        self.assertEqual(set(['7000', '12000', '17000']), set(listdir(join(self.tempdir, 'MyMeter'))))
+        self.assertEqual(
+            set(["7000", "12000", "17000"]), set(listdir(join(self.tempdir, "MyMeter")))
+        )
 
     def testShouldAbspathOrNonePluginDir(self):
         data = dict(pluginDir=[])
+
         class MockClient(Client):
             def _initializePlugins(this, pluginDir):
-                data['pluginDir'].append(pluginDir)
+                data["pluginDir"].append(pluginDir)
 
-        kwargs = Dict(id='ignored', gustosHost='ignored', gustosPort=9999, threaded=False)
+        kwargs = Dict(
+            id="ignored", gustosHost="ignored", gustosPort=9999, threaded=False
+        )
 
         client = MockClient(**kwargs)
 
-        self.assertEqual([], data['pluginDir'])
+        self.assertEqual([], data["pluginDir"])
 
         client = MockClient(**kwargs.copyUpdate(pluginDir=self.pluginDir))
-        self.assertEqual([self.tempdir + '/plugins.d'], data['pluginDir'])
-        data['pluginDir'] = []
+        self.assertEqual([self.tempdir + "/plugins.d"], data["pluginDir"])
+        data["pluginDir"] = []
 
-        client = MockClient(**kwargs.copyUpdate(pluginDir='/../../../..' + self.pluginDir))
-        self.assertEqual([self.tempdir + '/plugins.d'], data['pluginDir'])
+        client = MockClient(
+            **kwargs.copyUpdate(pluginDir="/../../../.." + self.pluginDir)
+        )
+        self.assertEqual([self.tempdir + "/plugins.d"], data["pluginDir"])
 
     def testShouldImportPyFilesFromPluginDir(self):
-        self.setPlugins(plugins={'testingmeter.py': PLUGIN_CONTENT_OK_WHITEBOX})
+        self.setPlugins(plugins={"testingmeter.py": PLUGIN_CONTENT_OK_WHITEBOX})
 
-        kwargs = Dict(id='ignored', gustosHost='ignored', gustosPort=9999, pluginDir=self.pluginDir, threaded=False)
+        kwargs = Dict(
+            id="ignored",
+            gustosHost="ignored",
+            gustosPort=9999,
+            pluginDir=self.pluginDir,
+            threaded=False,
+        )
         client = Client(**kwargs)
 
-        expected = set(['testingmeter.py'])
+        expected = set(["testingmeter.py"])
         result = set(listdir(self.pluginDir))
         self.assertEqual(expected, result, result.symmetric_difference(expected))
         whiteBucket = self.whiteBucket()
-        self.assertTrue('import_complete' in whiteBucket, whiteBucket)
-        self.assertEqual(['testingmeter'], list(client._plugins.keys()))
+        self.assertTrue("import_complete" in whiteBucket, whiteBucket)
+        self.assertEqual(["testingmeter"], list(client._plugins.keys()))
 
     def testShouldRaiseErrorOnBadImportFromPluginDir(self):
-        self.setPlugins(plugins={'testingmeter.py': PLUGIN_CONTENT_NO_METER_WHITEBOX})
+        self.setPlugins(plugins={"testingmeter.py": PLUGIN_CONTENT_NO_METER_WHITEBOX})
 
-        kwargs = Dict(id='ignored', gustosHost='ignored', gustosPort=9999, pluginDir=self.pluginDir, threaded=False)
+        kwargs = Dict(
+            id="ignored",
+            gustosHost="ignored",
+            gustosPort=9999,
+            pluginDir=self.pluginDir,
+            threaded=False,
+        )
 
         with stderr_replaced() as err:
             try:
                 client = Client(**kwargs)
             except RuntimeError as e:
-                self.assertEqual('Plugin loading Failed', str(e))
+                self.assertEqual("Plugin loading Failed", str(e))
             else:
-                self.fail('Should not happen')
+                self.fail("Should not happen")
 
             errStr = err.getvalue()
-            self.assertTrue("Error loading PluginModule: 'testingmeter' from file:" in errStr, errStr)
+            self.assertTrue(
+                "Error loading PluginModule: 'testingmeter' from file:" in errStr,
+                errStr,
+            )
             self.assertTrue(", original exception was:\n" in errStr, errStr)
             self.assertTrue("Traceback " in errStr, errStr)
 
         # execfile, no "normal"-import; therefore no .pyc's
-        expected = set(['testingmeter.py'])
+        expected = set(["testingmeter.py"])
         result = set(listdir(self.pluginDir))
         self.assertEqual(expected, result)
         whiteBucket = self.whiteBucket()
 
         # Ergo, import was ok, but "meter" global not present
-        self.assertEqual(['start NO_METER_WHITEBOX', 'import_complete'], whiteBucket)
+        self.assertEqual(["start NO_METER_WHITEBOX", "import_complete"], whiteBucket)
 
-        self.setPlugins(plugins={'zarro.py': PLUGIN_CONTENT_WITH_ERROR_WHITEBOX})
-        whiteBucket[:] = ['SENTINEL']
+        self.setPlugins(plugins={"zarro.py": PLUGIN_CONTENT_WITH_ERROR_WHITEBOX})
+        whiteBucket[:] = ["SENTINEL"]
         with stderr_replaced() as err:
             try:
                 Client(**kwargs)
             except RuntimeError as e:
-                self.assertEqual('Plugin loading Failed', str(e))
+                self.assertEqual("Plugin loading Failed", str(e))
             else:
-                self.fail('Should not happen')
+                self.fail("Should not happen")
 
         # Error at import time
-        self.assertEqual(['SENTINEL', 'start ERROR_WHITEBOX'], whiteBucket)
+        self.assertEqual(["SENTINEL", "start ERROR_WHITEBOX"], whiteBucket)
 
     def testShouldCallMeterFromImportedPlugins(self):
-        self.setPlugins(plugins={
-            'testingmeter.py': PLUGIN_CONTENT_OK_WHITEBOX,
-            'p1*&#~`%+=.py': PLUGIN2_CONTENT_OK_WHITEBOX})
+        self.setPlugins(
+            plugins={
+                "testingmeter.py": PLUGIN_CONTENT_OK_WHITEBOX,
+                "p1*&#~`%+=.py": PLUGIN2_CONTENT_OK_WHITEBOX,
+            }
+        )
 
         mockClock = MockClock()
-        sleeper = CallTrace('sleeper', methods={'sleep': mockClock.sleep})
+        sleeper = CallTrace("sleeper", methods={"sleep": mockClock.sleep})
         try:
             # save
             Client_time = Client._time
@@ -252,11 +302,27 @@ class ClientTest(SeecrTestCase):
 
             # Client(), read plugins and instance poke
             sender = UdpSender(host="HOST", port="PORT", sok=self.socket)
-            client = Client(id="aServer", gustosHost="HOST", gustosPort="PORT", pluginDir=self.pluginDir, logpath=self.tempdir, threaded=False, sender=sender)
+            client = Client(
+                id="aServer",
+                gustosHost="HOST",
+                gustosPort="PORT",
+                pluginDir=self.pluginDir,
+                logpath=self.tempdir,
+                threaded=False,
+                sender=sender,
+            )
             scheduler = client._reactor
 
             # meter().values() not yet called
-            self.assertEqual(['start OK_WHITEBOX plugin2', 'import_complete plugin2', 'start OK_WHITEBOX', 'import_complete'], self.whiteBucket())
+            self.assertEqual(
+                [
+                    "start OK_WHITEBOX plugin2",
+                    "import_complete plugin2",
+                    "start OK_WHITEBOX",
+                    "import_complete",
+                ],
+                self.whiteBucket(),
+            )
 
             scheduler.step()
             scheduler.step()
@@ -266,46 +332,78 @@ class ClientTest(SeecrTestCase):
             SimpleScheduler._sleep = _SimpleScheduler_sleep
 
         # meter().values() called
-        self.assertEqual(['start OK_WHITEBOX plugin2', 'import_complete plugin2', 'start OK_WHITEBOX', 'import_complete'] + ['values_called_plugin2', 'values_called'], self.whiteBucket())
+        self.assertEqual(
+            [
+                "start OK_WHITEBOX plugin2",
+                "import_complete plugin2",
+                "start OK_WHITEBOX",
+                "import_complete",
+            ]
+            + ["values_called_plugin2", "values_called"],
+            self.whiteBucket(),
+        )
 
     def testShouldIgnoreNonFilesAndNonDotPyEndingNames(self):
-        self.setPlugins(plugins={
-            'testingmeter.otherext': PLUGIN_CONTENT_OK_WHITEBOX,
-            'file.py.txt': PLUGIN_CONTENT_OK_WHITEBOX,
-            'file_no_extension': PLUGIN_CONTENT_OK_WHITEBOX})
+        self.setPlugins(
+            plugins={
+                "testingmeter.otherext": PLUGIN_CONTENT_OK_WHITEBOX,
+                "file.py.txt": PLUGIN_CONTENT_OK_WHITEBOX,
+                "file_no_extension": PLUGIN_CONTENT_OK_WHITEBOX,
+            }
+        )
 
-        kwargs = Dict(id='ignored', gustosHost='ignored', gustosPort=9999, pluginDir=self.pluginDir, threaded=False)
+        kwargs = Dict(
+            id="ignored",
+            gustosHost="ignored",
+            gustosPort=9999,
+            pluginDir=self.pluginDir,
+            threaded=False,
+        )
         client = Client(**kwargs)
 
         whiteBucket = self.whiteBucket()
         self.assertEqual([], whiteBucket)
 
     def testShouldHandleOddNames(self):
-        self.setPlugins(plugins={'p1*&#~`%+=.py': PLUGIN_CONTENT_OK_WHITEBOX})
+        self.setPlugins(plugins={"p1*&#~`%+=.py": PLUGIN_CONTENT_OK_WHITEBOX})
 
-        kwargs = Dict(id='ignored', gustosHost='ignored', gustosPort=9999, pluginDir=self.pluginDir, threaded=False)
+        kwargs = Dict(
+            id="ignored",
+            gustosHost="ignored",
+            gustosPort=9999,
+            pluginDir=self.pluginDir,
+            threaded=False,
+        )
         client = Client(**kwargs)
 
         whiteBucket = self.whiteBucket()
-        self.assertEqual(['start OK_WHITEBOX', 'import_complete'], whiteBucket)
+        self.assertEqual(["start OK_WHITEBOX", "import_complete"], whiteBucket)
 
     def testSchedulingWithWeightlessReactor(self):
         with Reactor() as reactor:
-            sender = UdpSender(host='HOST', port='PORT', sok=self.socket)
-            client = Client(reactor=reactor,
+            sender = UdpSender(host="HOST", port="PORT", sok=self.socket)
+            client = Client(
+                reactor=reactor,
                 id="aServer",
-                gustosHost="HOST", gustosPort="PORT",
-                logpath=self.tempdir, threaded=False,
-                sender=sender)
+                gustosHost="HOST",
+                gustosPort="PORT",
+                logpath=self.tempdir,
+                threaded=False,
+                sender=sender,
+            )
             t0 = time()
-            meter2 = CallTrace('another meter', returnValues=dict(
-                values={'group2': {'chartLabel': {'serieLabel': {'quantity': 42}}}}))
+            meter2 = CallTrace(
+                "another meter",
+                returnValues=dict(
+                    values={"group2": {"chartLabel": {"serieLabel": {"quantity": 42}}}}
+                ),
+            )
 
             client.addMeter(self.meter, interval=0.09)
             client.addMeter(meter2, interval=0.19)
             self.assertEqual([], self.socket.calledMethodNames())
             reactor.step()
-            self.assertEqual(['sendto', 'close'], self.socket.calledMethodNames())
+            self.assertEqual(["sendto", "close"], self.socket.calledMethodNames())
             reactor.step()
             reactor.step()
             reactor.step()
@@ -313,11 +411,12 @@ class ClientTest(SeecrTestCase):
         deltaT = time() - t0
 
         self.assertEqual(
-            ['group', 'group', 'group2', 'group', 'group'],
+            ["group", "group", "group2", "group", "group"],
             [
-                ''.join(list(loads(m.args[0])['data'].keys()))
-                for m in self.socket.calledMethods if m.name != "close"
-            ]
+                "".join(list(loads(m.args[0])["data"].keys()))
+                for m in self.socket.calledMethods
+                if m.name != "close"
+            ],
         )
         self.assertTrue(0.36 < deltaT < 0.38, deltaT)
 
@@ -326,22 +425,45 @@ class ClientTest(SeecrTestCase):
         numberOfReports = sys.getrecursionlimit() + 1
         for i in range(numberOfReports):
             self.scheduler.step()
-        self.assertEqual(numberOfReports * ['sendto', 'close'], self.socket.calledMethodNames())
+        self.assertEqual(
+            numberOfReports * ["sendto", "close"], self.socket.calledMethodNames()
+        )
 
     def testClientWithoutReactor(self):
-        sender = UdpSender(host='HOST', port='PORT', sok=self.socket)
-        client = Client(id="aServer", gustosHost="HOST", gustosPort="PORT", logpath=self.tempdir, threaded=False, sender=sender)
+        sender = UdpSender(host="HOST", port="PORT", sok=self.socket)
+        client = Client(
+            id="aServer",
+            gustosHost="HOST",
+            gustosPort="PORT",
+            logpath=self.tempdir,
+            threaded=False,
+            sender=sender,
+        )
         client._time = lambda: 1
 
-        client.report({"Queries": {"API-1": { "queries": { EVENT: 10 }}}})
+        client.report({"Queries": {"API-1": {"queries": {EVENT: 10}}}})
 
-        self.assertEqual(['sendto', 'close'], self.socket.calledMethodNames())
+        self.assertEqual(["sendto", "close"], self.socket.calledMethodNames())
         data, remote = self.socket.calledMethods[0].args
-        self.assertEqual(('HOST', 'PORT'), remote)
-        self.assertEqual({"timestamp": 1000, "data": {"Queries": {"API-1": {"queries": {"event": 10}}}}, "sender": "aServer", "digest": "8eb546039ef7a6091702566856d304a0923bd74d"}, loads(data))
+        self.assertEqual(("HOST", "PORT"), remote)
+        self.assertEqual(
+            {
+                "timestamp": 1000,
+                "data": {"Queries": {"API-1": {"queries": {"event": 10}}}},
+                "sender": "aServer",
+                "digest": "8eb546039ef7a6091702566856d304a0923bd74d",
+            },
+            loads(data),
+        )
 
     def testUpdateConfig(self):
-        client = Client(id="aServer", gustosHost="HOST", gustosPort="PORT", logpath=self.tempdir, threaded=False)
+        client = Client(
+            id="aServer",
+            gustosHost="HOST",
+            gustosPort="PORT",
+            logpath=self.tempdir,
+            threaded=False,
+        )
         self.assertEqual("HOST", client._sender._host)
         self.assertEqual("PORT", client._sender._port)
         self.assertEqual(UdpSender, type(client._sender))
@@ -358,24 +480,29 @@ class ClientTest(SeecrTestCase):
 
     def testClientStop(self):
         mockReporter = CallTrace()
-        client = Client(id="aServer", gustosHost="HOST", gustosPort="PORT", logpath=self.tempdir, threaded=False)
+        client = Client(
+            id="aServer",
+            gustosHost="HOST",
+            gustosPort="PORT",
+            logpath=self.tempdir,
+            threaded=False,
+        )
         client._reporter = mockReporter
 
         client.stop()
         self.assertEqual(["stop"], mockReporter.calledMethodNames())
-
 
     def setPlugins(self, plugins):
         if isdir(self.pluginDir):
             rmtree(self.pluginDir)
         makedirs(self.pluginDir)
         for fileName, content in list(plugins.items()):
-            with open(join(self.pluginDir, fileName), 'w') as f:
+            with open(join(self.pluginDir, fileName), "w") as f:
                 f.write(content)
 
     def whiteBucket(self):
-        if hasattr(sys.modules['gustos.common'], '_test_whiteboxing'):
-            return sys.modules['gustos.common']._test_whiteboxing
+        if hasattr(sys.modules["gustos.common"], "_test_whiteboxing"):
+            return sys.modules["gustos.common"]._test_whiteboxing
         return None
 
     def _nextCallback(self, scheduler):
@@ -385,10 +512,12 @@ class ClientTest(SeecrTestCase):
 class MockClock(object):
     def __init__(self):
         self.now = 0
+
         def times():
             while True:
                 yield self.now
                 self.now += 1
+
         self._timeGenerator = times()
 
     def time(self):
@@ -402,6 +531,7 @@ class MockClock(object):
         target = self.now + t
         while self.now != target:
             self.step()
+
 
 class MockSocket(CallTrace):
     def __enter__(self, *args, **kwargs):
@@ -425,6 +555,7 @@ class Dict(dict):
         newDict = self.copy()
         newDict.update(*args, **kwargs)
         return newDict
+
 
 PLUGIN_CONTENT_OK_WHITEBOX = """\
 from gustos.common.units import PERCENTAGE

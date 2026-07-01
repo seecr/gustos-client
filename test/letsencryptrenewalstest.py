@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2019, 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2019, 2021-2022, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -168,7 +168,7 @@ def create_cert(daysValid):
         .public_key(private_key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(now)
-        .not_valid_after(now + timedelta(days=daysValid))
+        .not_valid_after(now + timedelta(days=daysValid, hours=5))
         .sign(private_key, hashes.SHA256())
     )
 

@@ -2,7 +2,7 @@
 #
 # "Gustos" is a monitoring tool by Seecr. This client side code for connecting with Gustos server.
 #
-# Copyright (C) 2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2022, 2026 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Gustos-Client"
 #
@@ -40,9 +40,7 @@ class _SSLCheck(object):
 
     def daysLeftOnPEM(self, pem, hostname):
         def daysLeft(cert):
-            return (
-                cert.not_valid_after_utc.date() - datetime.now(tz=timezone.utc).date()
-            ).days
+            return (cert.not_valid_after - datetime.now()).days
 
         result = dict()
         _dl = lambda cert: daysLeft(x509.load_pem_x509_certificate(cert))
