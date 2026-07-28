@@ -82,9 +82,5 @@ class _SSLCheck(object):
         }
 
     def _get_server_certificate(self, hostname):
-        if not hostname:
-            return None
-        conn = ssl.create_connection((hostname, 443))
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        sock = context.wrap_socket(conn, server_hostname=hostname)
-        return ssl.DER_cert_to_PEM_cert(sock.getpeercert(True)).encode("utf-8")
+        cert = ssl.get_server_certificate((hostname, 443))
+        return cert.encode("utf-8")
