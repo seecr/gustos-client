@@ -82,5 +82,7 @@ class _SSLCheck(object):
         }
 
     def _get_server_certificate(self, hostname):
+        if not hostname:
+            return None
         cert = ssl.get_server_certificate((hostname, 443))
         return cert.encode("utf-8")
